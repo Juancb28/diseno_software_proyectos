@@ -1,7 +1,5 @@
-package com.sistema.gestion.model.entity;
+package ec.edu.epn.proyectodiseno.model.entity;
 
-import com.sistema.gestion.model.base.Log;
-import com.sistema.gestion.model.enums.EstadoProyecto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,6 +7,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+
+import ec.edu.epn.proyectodiseno.model.base.Log;
+import ec.edu.epn.proyectodiseno.model.enums.EstadoProyecto;
 
 @Entity
 @Table(name = "proyectos")
@@ -39,6 +40,7 @@ public class Proyecto extends Log {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_proyecto", nullable = false)
+    @Builder.Default
     private EstadoProyecto estadoProyecto = EstadoProyecto.PLANIFICACION;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,6 +52,7 @@ public class Proyecto extends Log {
     private Departamento departamento;
 
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<AsignacionProyecto> asignaciones = new HashSet<>();
 
     public void asignarPersonal(Personal personal, String rolEnProyecto) {

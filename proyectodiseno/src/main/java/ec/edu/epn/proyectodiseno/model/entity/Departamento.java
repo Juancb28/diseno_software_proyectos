@@ -1,12 +1,14 @@
-package com.sistema.gestion.model.entity;
+package ec.edu.epn.proyectodiseno.model.entity;
 
-import com.sistema.gestion.model.base.Log;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
+
+import ec.edu.epn.proyectodiseno.model.base.Log;
 
 @Entity
 @Table(name = "departamentos")
@@ -34,9 +36,11 @@ public class Departamento extends Log {
     private Usuario jefatura;
 
     @OneToMany(mappedBy = "departamento", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Usuario> usuarios = new HashSet<>();
 
     @OneToMany(mappedBy = "departamento", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Personal> personal = new HashSet<>();
 
     public void asignarJefatura(Usuario usuario) {

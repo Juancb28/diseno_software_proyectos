@@ -4,6 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import ec.edu.epn.proyectodiseno.model.entity.DatoBiometrico;
+import ec.edu.epn.proyectodiseno.model.enums.TipoHuella;
+
 import java.util.List;
 import java.util.Optional;
 

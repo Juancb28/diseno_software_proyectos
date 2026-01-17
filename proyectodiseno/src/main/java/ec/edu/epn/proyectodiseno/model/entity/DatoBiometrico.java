@@ -1,12 +1,14 @@
-package com.sistema.gestion.model.entity;
+package ec.edu.epn.proyectodiseno.model.entity;
 
-import com.sistema.gestion.model.base.Log;
-import com.sistema.gestion.model.enums.TipoHuella;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+
+import ec.edu.epn.proyectodiseno.model.base.Log;
+import ec.edu.epn.proyectodiseno.model.enums.TipoHuella;
 
 @Entity
 @Table(name = "datos_biometricos")
@@ -30,6 +32,7 @@ public class DatoBiometrico extends Log {
     private byte[] datosEncriptados;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "fecha_registro", nullable = false)

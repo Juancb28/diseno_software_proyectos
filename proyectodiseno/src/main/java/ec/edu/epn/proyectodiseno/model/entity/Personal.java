@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+import ec.edu.epn.proyectodiseno.model.base.Log;
 import ec.edu.epn.proyectodiseno.model.enums.EstadoLaboral;
 
 @Entity
@@ -39,6 +40,7 @@ public class Personal extends Log {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_laboral", nullable = false)
+    @Builder.Default
     private EstadoLaboral estadoLaboral = EstadoLaboral.ACTIVO;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,18 +48,23 @@ public class Personal extends Log {
     private Departamento departamento;
 
     @OneToMany(mappedBy = "personal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Contrato> contratos = new HashSet<>();
 
     @OneToMany(mappedBy = "personal", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<AsignacionProyecto> asignaciones = new HashSet<>();
 
     @OneToMany(mappedBy = "personal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<DatoBiometrico> datosBiometricos = new HashSet<>();
 
     @OneToMany(mappedBy = "personal", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<RegistroAsistencia> registrosAsistencia = new HashSet<>();
 
     @OneToMany(mappedBy = "personal", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Ausencia> ausencias = new HashSet<>();
 
     public void agregarContrato(Contrato contrato) {

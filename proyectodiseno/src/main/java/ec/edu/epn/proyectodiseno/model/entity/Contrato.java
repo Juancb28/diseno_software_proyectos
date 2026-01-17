@@ -1,13 +1,15 @@
-package com.sistema.gestion.model.entity;
+package ec.edu.epn.proyectodiseno.model.entity;
 
-import com.sistema.gestion.model.base.Log;
-import com.sistema.gestion.model.enums.TipoContrato;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
+
+import ec.edu.epn.proyectodiseno.model.base.Log;
+import ec.edu.epn.proyectodiseno.model.enums.TipoContrato;
 
 @Entity
 @Table(name = "contratos")

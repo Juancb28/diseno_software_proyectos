@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import ec.edu.epn.proyectodiseno.model.entity.Ausencia;
+import ec.edu.epn.proyectodiseno.service.IAusenciaService;
 
 import java.util.List;
 

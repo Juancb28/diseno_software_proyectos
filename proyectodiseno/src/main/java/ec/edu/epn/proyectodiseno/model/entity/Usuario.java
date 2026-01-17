@@ -1,12 +1,14 @@
-package com.sistema.gestion.model.entity;
+package ec.edu.epn.proyectodiseno.model.entity;
 
-import com.sistema.gestion.model.base.Log;
-import com.sistema.gestion.model.enums.TipoRol;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import ec.edu.epn.proyectodiseno.model.base.Log;
+import ec.edu.epn.proyectodiseno.model.enums.TipoRol;
 
 @Entity
 @Table(name = "usuarios")
@@ -38,9 +40,11 @@ public class Usuario extends Log {
     private Departamento departamento;
 
     @OneToMany(mappedBy = "director", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Proyecto> proyectosDirigidos = new HashSet<>();
 
     @OneToMany(mappedBy = "aprobador", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<Ausencia> ausenciasAprobadas = new HashSet<>();
 
     public void asignarRol(TipoRol rol) {

@@ -36,6 +36,7 @@ public class Ausencia extends Log {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_ausencia", nullable = false)
+    @Builder.Default
     private EstadoAusencia estadoAusencia = EstadoAusencia.PENDIENTE;
 
     @Column(columnDefinition = "TEXT")

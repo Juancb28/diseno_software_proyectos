@@ -1,11 +1,13 @@
-package com.sistema.gestion.model.entity;
+package ec.edu.epn.proyectodiseno.model.entity;
 
-import com.sistema.gestion.model.base.Log;
-import com.sistema.gestion.model.enums.TipoRegistro;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+
+import ec.edu.epn.proyectodiseno.model.base.Log;
+import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
 
 @Entity
 @Table(name = "registros_asistencia")
@@ -28,6 +30,7 @@ public class RegistroAsistencia extends Log {
     private TipoRegistro tipoRegistro;
 
     @Column(name = "verificacion_biometrica")
+    @Builder.Default
     private Boolean verificacionBiometrica = false;
 
     @Column(length = 100)

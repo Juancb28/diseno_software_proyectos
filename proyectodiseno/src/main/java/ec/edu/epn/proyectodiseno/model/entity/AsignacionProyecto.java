@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 
+import ec.edu.epn.proyectodiseno.model.base.Log;
+
 @Entity
 @Table(name = "asignaciones_proyecto")
 @Data

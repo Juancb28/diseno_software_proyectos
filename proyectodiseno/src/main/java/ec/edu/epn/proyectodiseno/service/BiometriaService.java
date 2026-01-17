@@ -4,9 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ec.edu.epn.proyectodiseno.model.entity.DatoBiometrico;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
+import ec.edu.epn.proyectodiseno.model.entity.RegistroAsistencia;
 import ec.edu.epn.proyectodiseno.model.enums.TipoHuella;
+import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
 import ec.edu.epn.proyectodiseno.repository.DatoBiometricoRepository;
+import ec.edu.epn.proyectodiseno.repository.RegistroAsistenciaRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

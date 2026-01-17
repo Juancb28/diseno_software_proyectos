@@ -1,13 +1,13 @@
-package com.sistema.gestion.service;
+package ec.edu.epn.proyectodiseno.service;
 
-import com.sistema.gestion.model.entity.Ausencia;
-import com.sistema.gestion.model.entity.Personal;
-import com.sistema.gestion.model.entity.Usuario;
-import com.sistema.gestion.repository.AusenciaRepository;
-import com.sistema.gestion.repository.UsuarioRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import ec.edu.epn.proyectodiseno.model.entity.Ausencia;
+import ec.edu.epn.proyectodiseno.model.entity.Personal;
+import ec.edu.epn.proyectodiseno.repository.AusenciaRepository;
 
 import java.util.List;
 

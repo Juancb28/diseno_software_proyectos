@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ec.edu.epn.proyectodiseno.model.entity.Ausencia;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
 import ec.edu.epn.proyectodiseno.repository.UsuarioRepository;
+import ec.edu.epn.proyectodiseno.repository.AusenciaRepository;
 
 import java.util.List;
 

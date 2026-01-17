@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
+import ec.edu.epn.proyectodiseno.model.base.Log;
 import ec.edu.epn.proyectodiseno.model.enums.EstadoLaboral;
 
 @Entity

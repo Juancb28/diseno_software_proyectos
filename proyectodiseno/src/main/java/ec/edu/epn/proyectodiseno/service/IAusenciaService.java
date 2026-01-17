@@ -5,6 +5,8 @@ package ec.edu.epn.proyectodiseno.service;
 
 import java.util.List;
 
+import ec.edu.epn.proyectodiseno.model.entity.Ausencia;
+
 public interface IAusenciaService {
     
     Ausencia notificarAusencia(Long personalId, Ausencia ausencia);

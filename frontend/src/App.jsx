@@ -1,11 +1,18 @@
-import { BrowserRouter } from "react-router-dom";
-import AppRouter from "./routes/AppRouter";
+import { useState } from "react";
+import LoginPage from "./pages/LoginPage";
+import AppLayout from "./components/AppLayout";
 
 function App() {
+  const [usuario, setUsuario] = useState(null);
+
   return (
-    <BrowserRouter>
-      <AppRouter />
-    </BrowserRouter>
+    <>
+      {!usuario ? (
+        <LoginPage onLogin={(u) => setUsuario(u)} />
+      ) : (
+        <AppLayout usuario={usuario} />
+      )}
+    </>
   );
 }
 

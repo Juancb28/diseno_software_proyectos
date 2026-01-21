@@ -1,18 +1,24 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
+1.Crear el proyecto base con React + Vite
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+-npm create vite@latest frontend --template react
 
-## React Compiler
+![alt text](<Captura de pantalla 2026-01-16 223805.png>)
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+-cd frontend
+-npm install # solo la primera vez, para instalar dependencias
 
-Note: This will impact Vite dev & build performances.
+-npm install react-router-dom axios
+-npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
 
-## Expanding the ESLint configuration
+![alt text](<Captura de pantalla 2026-01-16 224421.png>)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+necesitamos cargar el servidor de Vite utilizamos el comando:
+
+npm run dev
+
+Para el testeo:
+- Si USE_MOCK = true → se usan los datos quemados.
+- Si USE_MOCK = false → se llaman las APIs reales con Axios.

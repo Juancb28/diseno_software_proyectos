@@ -45,7 +45,7 @@ public class PersonalController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Personal> buscarPorId(@PathVariable Long id) {
         Personal personal = personalService.buscarPorId(id);
         return ResponseEntity.ok(personal);

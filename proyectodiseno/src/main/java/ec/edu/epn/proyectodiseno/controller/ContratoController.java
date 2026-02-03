@@ -70,7 +70,7 @@ public class ContratoController {
      * @param id ID del contrato
      * @return Contrato encontrado
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Contrato> buscarPorId(@PathVariable Long id) {
         Contrato contrato = contratoService.buscarPorId(id);
         return ResponseEntity.ok(contrato);

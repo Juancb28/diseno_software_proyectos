@@ -28,7 +28,7 @@ public class AsistenciaController {
         return new ResponseEntity<>(registro, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<RegistroAsistencia> buscarPorId(@PathVariable Long id) {
         RegistroAsistencia registro = asistenciaService.buscarPorId(id);
         return ResponseEntity.ok(registro);

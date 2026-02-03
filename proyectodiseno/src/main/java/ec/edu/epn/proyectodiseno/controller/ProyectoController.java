@@ -53,7 +53,7 @@ public class ProyectoController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Proyecto> buscarPorId(@PathVariable Long id) {
         Proyecto proyecto = proyectoService.buscarPorId(id);
         return ResponseEntity.ok(proyecto);

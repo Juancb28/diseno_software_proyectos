@@ -44,7 +44,7 @@ public class AusenciaController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<Ausencia> buscarPorId(@PathVariable Long id) {
         Ausencia ausencia = ausenciaService.buscarPorId(id);
         return ResponseEntity.ok(ausencia);

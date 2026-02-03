@@ -47,10 +47,6 @@ public class Proyecto extends Log {
     @JoinColumn(name = "director_id")
     private Usuario director;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "departamento_id")
-    private Departamento departamento;
-
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<AsignacionProyecto> asignaciones = new HashSet<>();

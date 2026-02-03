@@ -20,8 +20,6 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long> {
     
     List<Proyecto> findByDirectorId(Long directorId);
     
-    List<Proyecto> findByDepartamentoId(Long departamentoId);
-    
     @Query("SELECT p FROM Proyecto p WHERE p.estadoProyecto = 'EN_PROGRESO' AND p.estaActivo = true")
     List<Proyecto> findActivos();
     

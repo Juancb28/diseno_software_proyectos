@@ -49,7 +49,7 @@ public class Ausencia extends Log {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "aprobador_id")
-    @JsonIgnoreProperties({"proyectosDirigidos", "ausenciasAprobadas", "departamento"})
+    @JsonIgnoreProperties({"proyectosDirigidos", "ausenciasAprobadas"})
     private Usuario aprobador;
 
     @Column(name = "fecha_aprobacion")

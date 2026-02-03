@@ -1,8 +1,6 @@
 package ec.edu.epn.proyectodiseno.model.entity;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,11 +42,6 @@ public class Personal extends Log {
     @Column(name = "estado_laboral", nullable = false)
     @Builder.Default
     private EstadoLaboral estadoLaboral = EstadoLaboral.ACTIVO;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "departamento_id")
-    @JsonIgnoreProperties({"personal", "proyectos"})
-    private Departamento departamento;
 
     @OneToMany(mappedBy = "personal", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

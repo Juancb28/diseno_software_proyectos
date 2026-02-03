@@ -35,10 +35,6 @@ public class Usuario extends Log {
     @Column(name = "tipo_rol", nullable = false)
     private TipoRol tipoRol;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "departamento_id")
-    private Departamento departamento;
-
     @OneToMany(mappedBy = "director", fetch = FetchType.LAZY)
     @Builder.Default
     private Set<Proyecto> proyectosDirigidos = new HashSet<>();

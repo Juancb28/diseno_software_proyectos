@@ -23,8 +23,6 @@ public interface PersonalRepository extends JpaRepository<Personal, Long> {
     
     List<Personal> findByEstaActivo(Boolean activo);
     
-    List<Personal> findByDepartamentoId(Long departamentoId);
-    
     @Query("SELECT COUNT(p) FROM Personal p WHERE p.estadoLaboral = :estado AND p.estaActivo = true")
     Integer contarPorEstado(@Param("estado") EstadoLaboral estado);
     

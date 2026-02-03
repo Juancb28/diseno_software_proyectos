@@ -7,12 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ec.edu.epn.proyectodiseno.model.dto.PersonalRegistroDTO;
 import ec.edu.epn.proyectodiseno.model.entity.AsignacionProyecto;
-import ec.edu.epn.proyectodiseno.model.entity.Departamento;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
 import ec.edu.epn.proyectodiseno.model.entity.Proyecto;
 import ec.edu.epn.proyectodiseno.model.enums.EstadoLaboral;
 import ec.edu.epn.proyectodiseno.repository.AsignacionProyectoRepository;
-import ec.edu.epn.proyectodiseno.repository.DepartamentoRepository;
 import ec.edu.epn.proyectodiseno.repository.PersonalRepository;
 import ec.edu.epn.proyectodiseno.repository.ProyectoRepository;
 
@@ -26,7 +24,6 @@ public class PersonalService implements IPersonalService {
 
     private final PersonalRepository personalRepository;
     private final ProyectoRepository proyectoRepository;
-    private final DepartamentoRepository departamentoRepository;
     private final AsignacionProyectoRepository asignacionProyectoRepository;
 
     @Override
@@ -53,13 +50,6 @@ public class PersonalService implements IPersonalService {
                 .telefono(dto.getTelefono())
                 .estadoLaboral(dto.getEstadoLaboral() != null ? dto.getEstadoLaboral() : EstadoLaboral.ACTIVO)
                 .build();
-
-        // Asignar departamento si existe
-        if (dto.getDepartamentoId() != null) {
-            Departamento departamento = departamentoRepository.findById(dto.getDepartamentoId())
-                    .orElseThrow(() -> new RuntimeException("Departamento no encontrado"));
-            personal.setDepartamento(departamento);
-        }
 
         validarDatosPersonal(personal);
         Personal personalGuardado = personalRepository.save(personal);

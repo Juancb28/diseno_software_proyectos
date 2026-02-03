@@ -20,7 +20,6 @@ public class PersonalRegistroDTO {
     private LocalDate fechaNacimiento;
     private String telefono;
     private EstadoLaboral estadoLaboral;
-    private Long departamentoId;
     private Long proyectoId;
     private String rolEnProyecto;
     private Integer porcentajeDedicacion;

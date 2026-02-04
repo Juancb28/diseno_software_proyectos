@@ -27,6 +27,14 @@ public class AusenciaController {
         return new ResponseEntity<>(nuevaAusencia, HttpStatus.CREATED);
     }
 
+    @PostMapping("/personal/{cedula}")
+    public ResponseEntity<Ausencia> registrarAusenciaPorPersonal(
+            @PathVariable String cedula,
+            @RequestBody Ausencia ausencia) {
+        Ausencia nuevaAusencia = ausenciaService.registrarAusencia(cedula, ausencia);
+        return new ResponseEntity<>(nuevaAusencia, HttpStatus.CREATED);
+    }
+
     @PatchMapping("/{ausenciaId}/aprobar/{aprobadorId}")
     public ResponseEntity<Ausencia> aprobarAusencia(
             @PathVariable Long ausenciaId,

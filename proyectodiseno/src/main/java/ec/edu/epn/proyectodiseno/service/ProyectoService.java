@@ -1,6 +1,7 @@
 package ec.edu.epn.proyectodiseno.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,20 @@ public class ProyectoService implements IProyectoService {
     private final ProyectoRepository proyectoRepository;
     private final IPersonalService personalService;
     private final AsignacionProyectoRepository asignacionProyectoRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public Proyecto crearProyecto(Proyecto proyecto) {
+        // Si se proporciona un director, cargar la entidad completa
+        if (proyecto.getDirector() != null && proyecto.getDirector().getCedula() != null) {
+            Personal director = personalService.buscarPorId(proyecto.getDirector().getCedula());
+            proyecto.setDirector(director);
+        }
+        // Asegurar que estaActivo sea true por defecto
+        if (proyecto.getEstaActivo() == null) {
+            proyecto.setEstaActivo(true);
+        }
         return proyectoRepository.save(proyecto);
     }
 
@@ -33,6 +44,7 @@ public class ProyectoService implements IProyectoService {
     public Proyecto modificarProyecto(Long id, Proyecto proyecto) {
         Proyecto proyectoExistente = buscarPorId(id);
         proyectoExistente.setNombre(proyecto.getNombre());
+        proyectoExistente.setCodigoProyecto(proyecto.getCodigoProyecto());
         proyectoExistente.setDescripcion(proyecto.getDescripcion());
         proyectoExistente.setFechaInicio(proyecto.getFechaInicio());
         proyectoExistente.setFechaFin(proyecto.getFechaFin());
@@ -40,6 +52,13 @@ public class ProyectoService implements IProyectoService {
         proyectoExistente.setObjetivos(proyecto.getObjetivos());
         proyectoExistente.setCliente(proyecto.getCliente());
         proyectoExistente.setEstadoProyecto(proyecto.getEstadoProyecto());
+        
+        // Actualizar director si se proporciona
+        if (proyecto.getDirector() != null && proyecto.getDirector().getCedula() != null) {
+            Personal director = personalService.buscarPorId(proyecto.getDirector().getCedula());
+            proyectoExistente.setDirector(director);
+        }
+        
         return proyectoRepository.save(proyectoExistente);
     }
 
@@ -83,7 +102,71 @@ public class ProyectoService implements IProyectoService {
     @Override
     @Transactional(readOnly = true)
     public List<Proyecto> listarTodos() {
-        return proyectoRepository.findAll();
+        // Usar JDBC para evitar el campo BLOB que causa problemas con SQLite
+        String sql = "SELECT id FROM proyectos WHERE esta_activo = 1 OR esta_activo IS NULL";
+        List<Long> ids = jdbcTemplate.queryForList(sql, Long.class);
+        
+        // Cargar cada proyecto individualmente sin el documento
+        return ids.stream()
+            .map(id -> {
+                try {
+                    return buscarPorIdSinDocumento(id);
+                } catch (Exception e) {
+                    return null;
+                }
+            })
+            .filter(p -> p != null)
+            .toList();
+    }
+    
+    private Proyecto buscarPorIdSinDocumento(Long id) {
+        String sql = "SELECT id, nombre, codigo_proyecto, director_cedula, descripcion, " +
+                     "fecha_inicio, fecha_fin, presupuesto, objetivos, cliente, estado_proyecto, " +
+                     "nombre_documento, esta_activo, fecha_creacion, fecha_actualizacion " +
+                     "FROM proyectos WHERE id = ?";
+        
+        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+            Proyecto p = new Proyecto();
+            p.setId(rs.getLong("id"));
+            p.setNombre(rs.getString("nombre"));
+            p.setCodigoProyecto(rs.getString("codigo_proyecto"));
+            p.setDescripcion(rs.getString("descripcion"));
+            
+            java.sql.Date fechaInicio = rs.getDate("fecha_inicio");
+            if (fechaInicio != null) {
+                p.setFechaInicio(fechaInicio.toLocalDate());
+            }
+            
+            java.sql.Date fechaFin = rs.getDate("fecha_fin");
+            if (fechaFin != null) {
+                p.setFechaFin(fechaFin.toLocalDate());
+            }
+            
+            java.math.BigDecimal presupuesto = rs.getBigDecimal("presupuesto");
+            if (presupuesto != null) {
+                p.setPresupuesto(presupuesto);
+            }
+            
+            p.setObjetivos(rs.getString("objetivos"));
+            p.setCliente(rs.getString("cliente"));
+            p.setEstadoProyecto(EstadoProyecto.valueOf(rs.getString("estado_proyecto")));
+            p.setNombreDocumento(rs.getString("nombre_documento"));
+            
+            Boolean estaActivo = rs.getObject("esta_activo") != null ? rs.getBoolean("esta_activo") : null;
+            p.setEstaActivo(estaActivo);
+            
+            String directorCedula = rs.getString("director_cedula");
+            if (directorCedula != null) {
+                try {
+                    Personal director = personalService.buscarPorId(directorCedula);
+                    p.setDirector(director);
+                } catch (Exception e) {
+                    // Director no encontrado, ignorar
+                }
+            }
+            
+            return p;
+        }, id);
     }
 
     @Override

@@ -95,8 +95,7 @@ public class ProyectoService implements IProyectoService {
     @Override
     @Transactional(readOnly = true)
     public Proyecto buscarPorId(Long id) {
-        return proyectoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado con ID: " + id));
+        return buscarPorIdSinDocumento(id);
     }
 
     @Override
@@ -125,48 +124,52 @@ public class ProyectoService implements IProyectoService {
                      "nombre_documento, esta_activo, fecha_creacion, fecha_actualizacion " +
                      "FROM proyectos WHERE id = ?";
         
-        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
-            Proyecto p = new Proyecto();
-            p.setId(rs.getLong("id"));
-            p.setNombre(rs.getString("nombre"));
-            p.setCodigoProyecto(rs.getString("codigo_proyecto"));
-            p.setDescripcion(rs.getString("descripcion"));
-            
-            java.sql.Date fechaInicio = rs.getDate("fecha_inicio");
-            if (fechaInicio != null) {
-                p.setFechaInicio(fechaInicio.toLocalDate());
-            }
-            
-            java.sql.Date fechaFin = rs.getDate("fecha_fin");
-            if (fechaFin != null) {
-                p.setFechaFin(fechaFin.toLocalDate());
-            }
-            
-            java.math.BigDecimal presupuesto = rs.getBigDecimal("presupuesto");
-            if (presupuesto != null) {
-                p.setPresupuesto(presupuesto);
-            }
-            
-            p.setObjetivos(rs.getString("objetivos"));
-            p.setCliente(rs.getString("cliente"));
-            p.setEstadoProyecto(EstadoProyecto.valueOf(rs.getString("estado_proyecto")));
-            p.setNombreDocumento(rs.getString("nombre_documento"));
-            
-            Boolean estaActivo = rs.getObject("esta_activo") != null ? rs.getBoolean("esta_activo") : null;
-            p.setEstaActivo(estaActivo);
-            
-            String directorCedula = rs.getString("director_cedula");
-            if (directorCedula != null) {
-                try {
-                    Personal director = personalService.buscarPorId(directorCedula);
-                    p.setDirector(director);
-                } catch (Exception e) {
-                    // Director no encontrado, ignorar
+        try {
+            return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                Proyecto p = new Proyecto();
+                p.setId(rs.getLong("id"));
+                p.setNombre(rs.getString("nombre"));
+                p.setCodigoProyecto(rs.getString("codigo_proyecto"));
+                p.setDescripcion(rs.getString("descripcion"));
+                
+                java.sql.Date fechaInicio = rs.getDate("fecha_inicio");
+                if (fechaInicio != null) {
+                    p.setFechaInicio(fechaInicio.toLocalDate());
                 }
-            }
-            
-            return p;
-        }, id);
+                
+                java.sql.Date fechaFin = rs.getDate("fecha_fin");
+                if (fechaFin != null) {
+                    p.setFechaFin(fechaFin.toLocalDate());
+                }
+                
+                java.math.BigDecimal presupuesto = rs.getBigDecimal("presupuesto");
+                if (presupuesto != null) {
+                    p.setPresupuesto(presupuesto);
+                }
+                
+                p.setObjetivos(rs.getString("objetivos"));
+                p.setCliente(rs.getString("cliente"));
+                p.setEstadoProyecto(EstadoProyecto.valueOf(rs.getString("estado_proyecto")));
+                p.setNombreDocumento(rs.getString("nombre_documento"));
+                
+                Boolean estaActivo = rs.getObject("esta_activo") != null ? rs.getBoolean("esta_activo") : null;
+                p.setEstaActivo(estaActivo);
+                
+                String directorCedula = rs.getString("director_cedula");
+                if (directorCedula != null) {
+                    try {
+                        Personal director = personalService.buscarPorId(directorCedula);
+                        p.setDirector(director);
+                    } catch (Exception e) {
+                        // Director no encontrado, ignorar
+                    }
+                }
+                
+                return p;
+            }, id);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            throw new RuntimeException("Proyecto no encontrado con ID: " + id);
+        }
     }
 
     @Override

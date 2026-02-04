@@ -24,7 +24,7 @@ public class AvanceController {
     private final IAvanceService avanceService;
 
     @PostMapping(value = "/subir", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Avance> subirAvance(
+    public ResponseEntity<ec.edu.epn.proyectodiseno.model.dto.AvanceResponse> subirAvance(
             @RequestParam("proyectoId") Long proyectoId,
             @RequestParam("directorId") Long directorId,
             @RequestParam("semestre") String semestre,
@@ -48,7 +48,7 @@ public class AvanceController {
     }
 
     @GetMapping("/proyecto/{proyectoId}")
-    public ResponseEntity<List<Avance>> listarPorProyecto(@PathVariable Long proyectoId) {
+    public ResponseEntity<List<ec.edu.epn.proyectodiseno.model.dto.AvanceResponse>> listarPorProyecto(@PathVariable Long proyectoId) {
         return ResponseEntity.ok(avanceService.listarPorProyecto(proyectoId));
     }
 
@@ -60,5 +60,11 @@ public class AvanceController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + avance.getNombreArchivo() + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(avance.getDocumentoPdf());
+    }
+
+    @DeleteMapping("/{id}/pdf")
+    public ResponseEntity<Void> eliminarPdf(@PathVariable Long id) {
+        avanceService.eliminarPdf(id);
+        return ResponseEntity.ok().build();
     }
 }

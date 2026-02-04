@@ -60,6 +60,12 @@ const menuItems: MenuItem[] = [
     icon: <ClipboardCheck className="h-5 w-5" />,
     path: '/asistencia',
     roles: ['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO', 'EMPLEADO']
+  },
+  {
+    title: 'Contratos',
+    icon: <FileText className="h-5 w-5" />,
+    path: '/contratos',
+    roles: ['ADMINISTRADOR', 'EMPLEADO']
   }
 ];
 

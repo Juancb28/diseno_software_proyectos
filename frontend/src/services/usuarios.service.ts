@@ -3,6 +3,7 @@ import apiClient from './api';
 export interface Usuario {
   id: number;
   username: string;
+  codigo?: string;
   password?: string;
   tipoRol: 'ADMINISTRADOR' | 'JEFATURA' | 'DIRECTOR_PROYECTO' | 'EMPLEADO';
   estado: boolean;

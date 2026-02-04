@@ -93,6 +93,7 @@ export function Asistencia() {
       horaSalida: data.horaSalida || undefined,
       tipo: tipoMap[data.tipoRegistro] || 'LABORATORIO',
       estado: estadoMap[data.estadoAsistencia] || 'PRESENTE',
+      proyecto: data.proyecto?.nombre || undefined,
     };
   };
 
@@ -106,9 +107,12 @@ export function Asistencia() {
         personalMap[p.cedula] = `${p.nombres} ${p.apellidos}`;
       });
 
-      if (isAyudante && usuario?.username) {
-        const registros = await asistenciaService.listarPorPersonal(usuario.username);
-        setAsistencias(registros.map((r) => mapAsistencia(r, personalMap)));
+      if (isAyudante) {
+        const cedula = usuario?.codigo || usuario?.username;
+        if (cedula) {
+          const registros = await asistenciaService.listarPorPersonal(cedula);
+          setAsistencias(registros.map((r) => mapAsistencia(r, personalMap)));
+        }
         return;
       }
 
@@ -133,21 +137,16 @@ export function Asistencia() {
     const matchesSearch = asistencia.empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asistencia.fecha.includes(searchTerm);
     
-    if (isAyudante) {
-      return matchesSearch && asistencia.empleado === usuario?.username;
-    }
-    
-    if (isDirector) {
-      return matchesSearch && asistencia.proyecto === 'Sistema de Gestión Académica';
-    }
-    
+    // Para ayudantes: ya se cargaron solo sus asistencias con listarPorPersonal()
+    // Para directores y jefatura: ya filtrado en cargarDatos
     return matchesSearch;
   });
 
   const handleRegistrarLaboratorio = async () => {
-    if (!usuario?.username) return;
+    const cedula = usuario?.codigo || usuario?.username;
+    if (!cedula) return;
     try {
-      await asistenciaService.registrar(usuario.username, 'LABORATORIO');
+      await asistenciaService.registrar(cedula, 'LABORATORIO');
       toast.success('Asistencia de laboratorio registrada');
       setDialogOpen(false);
       await cargarDatos();
@@ -158,9 +157,10 @@ export function Asistencia() {
   };
 
   const handleRegistrarQR = async () => {
-    if (!usuario?.username) return;
+    const cedula = usuario?.codigo || usuario?.username;
+    if (!cedula) return;
     try {
-      await asistenciaService.registrar(usuario.username, 'QR');
+      await asistenciaService.registrar(cedula, 'QR');
       toast.success('Asistencia QR registrada');
       setQrDialogOpen(false);
       await cargarDatos();

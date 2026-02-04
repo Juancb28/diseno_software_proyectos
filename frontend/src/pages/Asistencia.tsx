@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
@@ -31,6 +31,8 @@ import { Badge } from '@/app/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
 import { Plus, Search, QrCode, Clock, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { personalService, Personal as PersonalType } from '@/services/personal.service';
+import { asistenciaService, AsistenciaApi } from '@/services/asistencia.service';
 
 interface Asistencia {
   id: number;
@@ -43,20 +45,89 @@ interface Asistencia {
   proyecto?: string;
 }
 
-const MOCK_ASISTENCIAS: Asistencia[] = [];
-
 export function Asistencia() {
   const { usuario } = useAuth();
-  const [asistencias, setAsistencias] = useState<Asistencia[]>(MOCK_ASISTENCIAS);
+  const [asistencias, setAsistencias] = useState<Asistencia[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [personalList, setPersonalList] = useState<PersonalType[]>([]);
+  const [selectedPersonal, setSelectedPersonal] = useState<string>('');
+  const [selectedTipoRegistro, setSelectedTipoRegistro] = useState<'LABORATORIO' | 'QR'>('LABORATORIO');
 
   const isAyudante = usuario?.tipoRol === 'EMPLEADO';
   const isDirector = usuario?.tipoRol === 'DIRECTOR_PROYECTO';
   const isJefatura = usuario?.tipoRol === 'JEFATURA';
   const isAdmin = usuario?.tipoRol === 'ADMINISTRADOR';
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const mapAsistencia = (data: AsistenciaApi, personalMap: Record<string, string>): Asistencia => {
+    const cedula = data.personal?.cedula || '';
+    const empleado = personalMap[cedula] || cedula || 'N/A';
+    const tipoMap: Record<AsistenciaApi['tipoRegistro'], Asistencia['tipo']> = {
+      PRESENCIAL_OFICINA: 'LABORATORIO',
+      PRESENCIAL_LABORATORIO: 'LABORATORIO',
+      REMOTO: 'QR',
+      TRABAJO_CAMPO: 'QR',
+      VIAJE_NEGOCIOS: 'QR',
+      ENTRADA: 'QR',
+      SALIDA: 'QR',
+    };
+    const estadoMap: Record<AsistenciaApi['estadoAsistencia'], Asistencia['estado']> = {
+      PUNTUAL: 'PRESENTE',
+      PRESENTE: 'PRESENTE',
+      RETRASO: 'TARDE',
+      SALIDA_ANTICIPADA: 'TARDE',
+      AUSENTE: 'AUSENTE',
+      JUSTIFICADO: 'PRESENTE',
+    };
+    return {
+      id: data.id,
+      empleado,
+      fecha: data.fecha,
+      horaEntrada: data.horaEntrada || '-',
+      horaSalida: data.horaSalida || undefined,
+      tipo: tipoMap[data.tipoRegistro] || 'LABORATORIO',
+      estado: estadoMap[data.estadoAsistencia] || 'PRESENTE',
+    };
+  };
+
+  const cargarDatos = async () => {
+    try {
+      const personalData = await personalService.listarTodos();
+      setPersonalList(personalData);
+
+      const personalMap: Record<string, string> = {};
+      personalData.forEach((p) => {
+        personalMap[p.cedula] = `${p.nombres} ${p.apellidos}`;
+      });
+
+      if (isAyudante && usuario?.username) {
+        const registros = await asistenciaService.listarPorPersonal(usuario.username);
+        setAsistencias(registros.map((r) => mapAsistencia(r, personalMap)));
+        return;
+      }
+
+      // Para admin/jefatura/director: traer asistencia por cada personal
+      const results = await Promise.allSettled(
+        personalData.map((p) => asistenciaService.listarPorPersonal(p.cedula))
+      );
+      const merged: Asistencia[] = [];
+      results.forEach((res) => {
+        if (res.status === 'fulfilled') {
+          res.value.forEach((r) => merged.push(mapAsistencia(r, personalMap)));
+        }
+      });
+      setAsistencias(merged);
+    } catch (error) {
+      toast.error('Error al cargar asistencias');
+      console.error(error);
+    }
+  };
   
   const filteredAsistencias = asistencias.filter(asistencia => {
     const matchesSearch = asistencia.empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,20 +144,46 @@ export function Asistencia() {
     return matchesSearch;
   });
 
-  const handleRegistrarLaboratorio = () => {
-    const now = new Date();
-    const hora = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    toast.success(`Asistencia de laboratorio registrada - ${hora}`);
-    setDialogOpen(false);
+  const handleRegistrarLaboratorio = async () => {
+    if (!usuario?.username) return;
+    try {
+      await asistenciaService.registrar(usuario.username, 'LABORATORIO');
+      toast.success('Asistencia de laboratorio registrada');
+      setDialogOpen(false);
+      await cargarDatos();
+    } catch (error) {
+      toast.error('Error al registrar asistencia');
+      console.error(error);
+    }
   };
 
-  const handleRegistrarQR = () => {
-    const now = new Date();
-    const hora = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-    
-    toast.success(`Asistencia QR registrada - ${hora}`);
-    setQrDialogOpen(false);
+  const handleRegistrarQR = async () => {
+    if (!usuario?.username) return;
+    try {
+      await asistenciaService.registrar(usuario.username, 'QR');
+      toast.success('Asistencia QR registrada');
+      setQrDialogOpen(false);
+      await cargarDatos();
+    } catch (error) {
+      toast.error('Error al registrar asistencia');
+      console.error(error);
+    }
+  };
+
+  const handleRegistrarManual = async () => {
+    if (!selectedPersonal) {
+      toast.error('Seleccione un empleado');
+      return;
+    }
+    try {
+      await asistenciaService.registrar(selectedPersonal, selectedTipoRegistro);
+      toast.success('Asistencia registrada');
+      setDialogOpen(false);
+      await cargarDatos();
+    } catch (error) {
+      toast.error('Error al registrar asistencia');
+      console.error(error);
+    }
   };
 
   const getEstadoBadge = (estado: string) => {
@@ -211,14 +308,16 @@ export function Asistencia() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="empleado">Empleado</Label>
-                  <Select>
+                  <Select value={selectedPersonal} onValueChange={setSelectedPersonal}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione un empleado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Ana López</SelectItem>
-                      <SelectItem value="2">Pedro Martínez</SelectItem>
-                      <SelectItem value="3">Laura Sánchez</SelectItem>
+                      {personalList.map((p) => (
+                        <SelectItem key={p.cedula} value={p.cedula}>
+                          {p.nombres} {p.apellidos}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -229,7 +328,7 @@ export function Asistencia() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="tipo">Tipo</Label>
-                    <Select defaultValue="LABORATORIO">
+                    <Select value={selectedTipoRegistro} onValueChange={(value) => setSelectedTipoRegistro(value as 'LABORATORIO' | 'QR')}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -250,7 +349,7 @@ export function Asistencia() {
                     <Input id="horaSalida" type="time" />
                   </div>
                 </div>
-                <Button className="w-full">
+                <Button className="w-full" onClick={handleRegistrarManual}>
                   Registrar Asistencia
                 </Button>
               </div>

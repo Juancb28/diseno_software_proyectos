@@ -17,6 +17,8 @@ public interface IAusenciaService {
     
     List<Ausencia> obtenerAusenciasPorEstado(EstadoAusencia estado);
     
+    List<Ausencia> listarTodas();
+    
     Ausencia buscarPorId(Long id);
     
     void cancelarAusencia(Long id);

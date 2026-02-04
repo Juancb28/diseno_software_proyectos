@@ -70,6 +70,12 @@ public class AusenciaService implements IAusenciaService {
         return ausenciaRepository.findByEstadoAusencia(estado);
     }
     
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ausencia> listarTodas() {
+        return ausenciaRepository.findAll();
+    }
+    
     private void validarAusencia(Ausencia ausencia) {
         if (ausencia.getFechaInicio().isAfter(ausencia.getFechaFin())) {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");

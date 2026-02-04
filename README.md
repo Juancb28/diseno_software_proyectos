@@ -3,3 +3,12 @@ Sistema de gestión integral para la Facultad de Sistemas de la Escuela Politéc
 
 
 del "\\.\D:\Software\EPN_5\Diseño de Software\Code\DisenoSoftwareProyectos\proyectodiseno\nul"
+
+
+curl -X POST https://diseno-software-proyectos.onrender.com/api/usuarios   -H "Content-Type: application/json"   -d '{
+    "username": "admin",
+    "password": "admin123",
+    "tipoRol": "ADMINISTRADOR",
+    "estado": true,
+    "estaActivo": true
+  }'

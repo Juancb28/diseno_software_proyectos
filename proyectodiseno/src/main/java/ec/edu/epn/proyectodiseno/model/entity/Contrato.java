@@ -24,7 +24,7 @@ public class Contrato extends Log {
 
     @Lob
     @JsonIgnore
-    @Column(name = "archivo_contrato", columnDefinition = "BLOB")
+    @Column(name = "archivo_contrato", columnDefinition = "BYTEA")
     private byte[] archivoContrato;
 
     @Column(name = "fecha_inicio", nullable = false)

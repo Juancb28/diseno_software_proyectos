@@ -54,7 +54,9 @@ public class Proyecto extends Log {
     private EstadoProyecto estadoProyecto = EstadoProyecto.PLANIFICACION;
 
     @Lob
+    @Basic(fetch = FetchType.LAZY)
     @Column(name = "documento")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private byte[] documento;
 
     @Column(name = "nombre_documento", length = 255)

@@ -26,4 +26,12 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long> {
     List<Proyecto> findByEstaActivo(Boolean activo);
     
     boolean existsByCodigoProyecto(String codigoProyecto);
+    
+    // Sobrescribir findAll para excluir el campo documento BLOB que causa problemas con SQLite
+    @Query("SELECT p FROM Proyecto p LEFT JOIN FETCH p.director")
+    List<Proyecto> findAll();
+    
+    // Sobrescribir findById para excluir el campo documento BLOB
+    @Query("SELECT p FROM Proyecto p LEFT JOIN FETCH p.director WHERE p.id = :id")
+    Optional<Proyecto> findById(Long id);
 }

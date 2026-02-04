@@ -12,9 +12,6 @@ import ec.edu.epn.proyectodiseno.model.entity.Personal;
 import ec.edu.epn.proyectodiseno.repository.ContratoRepository;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service

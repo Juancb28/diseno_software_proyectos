@@ -103,7 +103,7 @@ export function Asistencia() {
       setPersonalList(personalData);
 
       const personalMap: Record<string, string> = {};
-      personalData.forEach((p) => {
+      personalData.forEach((p: PersonalType) => {
         personalMap[p.cedula] = `${p.nombres} ${p.apellidos}`;
       });
 
@@ -111,19 +111,19 @@ export function Asistencia() {
         const cedula = usuario?.codigo || usuario?.username;
         if (cedula) {
           const registros = await asistenciaService.listarPorPersonal(cedula);
-          setAsistencias(registros.map((r) => mapAsistencia(r, personalMap)));
+          setAsistencias(registros.map((r: AsistenciaApi) => mapAsistencia(r, personalMap)));
         }
         return;
       }
 
       // Para admin/jefatura/director: traer asistencia por cada personal
       const results = await Promise.allSettled(
-        personalData.map((p) => asistenciaService.listarPorPersonal(p.cedula))
+        personalData.map((p: PersonalType) => asistenciaService.listarPorPersonal(p.cedula))
       );
       const merged: Asistencia[] = [];
-      results.forEach((res) => {
+      results.forEach((res: PromiseSettledResult<AsistenciaApi[]>) => {
         if (res.status === 'fulfilled') {
-          res.value.forEach((r) => merged.push(mapAsistencia(r, personalMap)));
+          res.value.forEach((r: AsistenciaApi) => merged.push(mapAsistencia(r, personalMap)));
         }
       });
       setAsistencias(merged);
@@ -247,7 +247,7 @@ export function Asistencia() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Fecha</Label>
-                    <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+                    <Input type="date" value={selectedDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedDate(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label>Hora Actual</Label>
@@ -328,7 +328,7 @@ export function Asistencia() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="tipo">Tipo</Label>
-                    <Select value={selectedTipoRegistro} onValueChange={(value) => setSelectedTipoRegistro(value as 'LABORATORIO' | 'QR')}>
+                    <Select value={selectedTipoRegistro} onValueChange={(value: string) => setSelectedTipoRegistro(value as 'LABORATORIO' | 'QR')}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -405,7 +405,7 @@ export function Asistencia() {
             <Input
               placeholder="Buscar por empleado o fecha..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>

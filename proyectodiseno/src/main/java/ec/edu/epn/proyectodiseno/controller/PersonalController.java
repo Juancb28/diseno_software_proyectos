@@ -1,6 +1,5 @@
 package ec.edu.epn.proyectodiseno.controller;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,33 +32,29 @@ public class PersonalController {
         return new ResponseEntity<>(nuevoPersonal, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Personal> modificarPersonal(@PathVariable Long id, @RequestBody Personal personal) {
-        Personal personalModificado = personalService.modificarPersonal(id, personal);
+    @PutMapping("/{cedula}")
+    public ResponseEntity<Personal> modificarPersonal(@PathVariable String cedula, @RequestBody Personal personal) {
+        Personal personalModificado = personalService.modificarPersonal(cedula, personal);
         return ResponseEntity.ok(personalModificado);
     }
 
-    @PatchMapping("/{id}/estado")
-    public ResponseEntity<Void> cambiarEstado(@PathVariable Long id, @RequestParam EstadoLaboral estado) {
-        personalService.cambiarEstado(id, estado);
+    @PatchMapping("/{cedula}/estado")
+    public ResponseEntity<Void> cambiarEstado(@PathVariable String cedula, @RequestParam EstadoLaboral estado) {
+        personalService.cambiarEstado(cedula, estado);
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Personal> buscarPorId(@PathVariable Long id) {
-        Personal personal = personalService.buscarPorId(id);
+    @GetMapping("/{cedula}")
+    public ResponseEntity<Personal> buscarPorId(@PathVariable String cedula) {
+        Personal personal = personalService.buscarPorId(cedula);
         return ResponseEntity.ok(personal);
     }
 
-    @GetMapping("/codigo/{codigo}")
-    public ResponseEntity<Personal> buscarPorCodigo(@PathVariable String codigo) {
-        Personal personal = personalService.buscarPorCodigoInterno(codigo);
-        return ResponseEntity.ok(personal);
-    }
-
+    // buscarPorCodigo removed as redundant or not supported by entity
+    
     @GetMapping("/nui/{nui}")
     public ResponseEntity<Personal> buscarPorNui(@PathVariable String nui) {
-        Personal personal = personalService.buscarPorNui(nui);
+        Personal personal = personalService.buscarPorId(nui);
         return ResponseEntity.ok(personal);
     }
 
@@ -81,9 +76,5 @@ public class PersonalController {
         return ResponseEntity.ok(cantidad);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        personalService.eliminar(id);
-        return ResponseEntity.noContent().build();
-    }
+    // Eliminar removed as it is not in interface. Use cambiarEstado via PATCH.
 }

@@ -1,12 +1,12 @@
 package ec.edu.epn.proyectodiseno.controller;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import ec.edu.epn.proyectodiseno.model.entity.Ausencia;
+import ec.edu.epn.proyectodiseno.model.enums.EstadoAusencia;
 import ec.edu.epn.proyectodiseno.service.IAusenciaService;
 
 import java.util.List;
@@ -19,29 +19,29 @@ public class AusenciaController {
 
     private final IAusenciaService ausenciaService;
 
-    @PostMapping("/{personalId}")
-    public ResponseEntity<Ausencia> notificarAusencia(
-            @PathVariable Long personalId,
+    @PostMapping("/{cedula}")
+    public ResponseEntity<Ausencia> registrarAusencia(
+            @PathVariable String cedula,
             @RequestBody Ausencia ausencia) {
-        Ausencia nuevaAusencia = ausenciaService.notificarAusencia(personalId, ausencia);
+        Ausencia nuevaAusencia = ausenciaService.registrarAusencia(cedula, ausencia);
         return new ResponseEntity<>(nuevaAusencia, HttpStatus.CREATED);
     }
 
     @PatchMapping("/{ausenciaId}/aprobar/{aprobadorId}")
-    public ResponseEntity<Void> aprobarAusencia(
+    public ResponseEntity<Ausencia> aprobarAusencia(
             @PathVariable Long ausenciaId,
             @PathVariable Long aprobadorId) {
-        ausenciaService.aprobarAusencia(ausenciaId, aprobadorId);
-        return ResponseEntity.ok().build();
+        Ausencia aprobada = ausenciaService.aprobarAusencia(ausenciaId, aprobadorId);
+        return ResponseEntity.ok(aprobada);
     }
 
     @PatchMapping("/{ausenciaId}/rechazar/{aprobadorId}")
-    public ResponseEntity<Void> rechazarAusencia(
+    public ResponseEntity<Ausencia> rechazarAusencia(
             @PathVariable Long ausenciaId,
             @PathVariable Long aprobadorId,
             @RequestParam String motivo) {
-        ausenciaService.rechazarAusencia(ausenciaId, aprobadorId, motivo);
-        return ResponseEntity.ok().build();
+        Ausencia rechazada = ausenciaService.rechazarAusencia(ausenciaId, aprobadorId, motivo);
+        return ResponseEntity.ok(rechazada);
     }
 
     @GetMapping("/{id}")
@@ -50,21 +50,21 @@ public class AusenciaController {
         return ResponseEntity.ok(ausencia);
     }
 
-    @GetMapping("/personal/{personalId}")
-    public ResponseEntity<List<Ausencia>> obtenerAusenciasPorPersonal(@PathVariable Long personalId) {
-        List<Ausencia> ausencias = ausenciaService.obtenerAusenciasPorPersonal(personalId);
+    @GetMapping("/personal/{cedula}")
+    public ResponseEntity<List<Ausencia>> obtenerAusenciasPorPersonal(@PathVariable String cedula) {
+        List<Ausencia> ausencias = ausenciaService.obtenerAusenciasPorPersonal(cedula);
         return ResponseEntity.ok(ausencias);
     }
 
-    @GetMapping("/pendientes")
-    public ResponseEntity<List<Ausencia>> obtenerAusenciasPendientes() {
-        List<Ausencia> ausencias = ausenciaService.obtenerAusenciasPendientes();
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<List<Ausencia>> obtenerAusenciasPorEstado(@PathVariable EstadoAusencia estado) {
+        List<Ausencia> ausencias = ausenciaService.obtenerAusenciasPorEstado(estado);
         return ResponseEntity.ok(ausencias);
     }
 
-    @GetMapping
-    public ResponseEntity<List<Ausencia>> listarTodas() {
-        List<Ausencia> ausencias = ausenciaService.listarTodas();
-        return ResponseEntity.ok(ausencias);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelarAusencia(@PathVariable Long id) {
+        ausenciaService.cancelarAusencia(id);
+        return ResponseEntity.ok().build();
     }
 }

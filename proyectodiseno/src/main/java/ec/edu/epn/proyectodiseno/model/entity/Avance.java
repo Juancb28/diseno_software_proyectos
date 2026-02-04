@@ -20,32 +20,37 @@ public class Avance extends Log {
     @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "director_id", nullable = false)
-    private Usuario director;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String descripcion;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "jefatura_id")
-    private Usuario jefatura;
+    @Column(name = "fecha_reporte")
+    private LocalDateTime fechaReporte;
 
-    @Column(name = "semestre", nullable = false, length = 50)
-    private String semestre;
-
-    @Lob
-    @Column(name = "documento_pdf", columnDefinition = "BLOB")
-    private byte[] documentoPdf;
-
-    @Column(name = "nombre_archivo", length = 255)
-    private String nombreArchivo;
-
+    @Column(name = "porcentaje_avance")
+    private Integer porcentajeAvance;
+    
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado", nullable = false)
-    @Builder.Default
-    private EstadoAvance estado = EstadoAvance.PENDIENTE;
+    @Column(name = "estado_avance")
+    private EstadoAvance estado;
 
-    @Column(name = "observaciones", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String observaciones;
 
     @Column(name = "fecha_revision")
     private LocalDateTime fechaRevision;
+    
+    @Lob
+    @Column(name = "documento_pdf", columnDefinition = "BLOB")
+    private byte[] documentoPdf;
+    
+    @Column(name = "nombre_archivo")
+    private String nombreArchivo;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "director_id")
+    private Usuario director;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "jefatura_id")
+    private Usuario jefatura;
 }

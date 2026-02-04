@@ -13,12 +13,10 @@ import java.util.Optional;
 @Repository
 public interface DatoBiometricoRepository extends JpaRepository<DatoBiometrico, Long> {
     
-    List<DatoBiometrico> findByPersonalId(Long personalId);
+    List<DatoBiometrico> findByPersonalCedula(String cedula);
     
-    Optional<DatoBiometrico> findByPersonalIdAndTipoHuella(Long personalId, TipoHuella tipoHuella);
+    Optional<DatoBiometrico> findByPersonalCedulaAndTipoHuella(String cedula, TipoHuella tipoHuella);
     
-    @Query("SELECT d FROM DatoBiometrico d WHERE d.activo = true AND d.estaActivo = true")
+    @Query("SELECT d FROM DatoBiometrico d WHERE d.activo = true")
     List<DatoBiometrico> findActivos();
-    
-    List<DatoBiometrico> findByPersonalIdAndActivo(Long personalId, Boolean activo);
 }

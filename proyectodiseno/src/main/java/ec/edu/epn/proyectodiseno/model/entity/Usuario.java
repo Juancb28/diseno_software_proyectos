@@ -4,8 +4,6 @@ package ec.edu.epn.proyectodiseno.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
 
 import ec.edu.epn.proyectodiseno.model.base.Log;
 import ec.edu.epn.proyectodiseno.model.enums.TipoRol;
@@ -20,39 +18,22 @@ import ec.edu.epn.proyectodiseno.model.enums.TipoRol;
 public class Usuario extends Log {
 
     @Column(unique = true, nullable = false, length = 50)
-    private String codigo;
-
-    @Column(nullable = false, length = 100)
-    private String nombre;
-
-    @Column(unique = true, nullable = false, length = 100)
-    private String correo;
+    private String username;
 
     @Column(nullable = false)
-    private String contrasena;
+    private String password;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "personal_id")
+    private Personal personal;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_rol", nullable = false)
     private TipoRol tipoRol;
 
-    @OneToMany(mappedBy = "director", fetch = FetchType.LAZY)
+    @Column(name = "estado")
     @Builder.Default
-    private Set<Proyecto> proyectosDirigidos = new HashSet<>();
+    private Boolean estado = true;
 
-    @OneToMany(mappedBy = "aprobador", fetch = FetchType.LAZY)
-    @Builder.Default
-    private Set<Ausencia> ausenciasAprobadas = new HashSet<>();
-
-    public void asignarRol(TipoRol rol) {
-        this.tipoRol = rol;
-    }
-
-    public boolean tienePermiso(String permiso) {
-        // Lógica de permisos basada en el rol
-        return true;
-    }
-
-    public boolean autenticar(String contrasena) {
-        return this.contrasena.equals(contrasena);
-    }
+    // Removed direct project/ausencia relationship management as they should be done via Personal or explicit queries if roles dictate
 }

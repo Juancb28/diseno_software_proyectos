@@ -1,11 +1,11 @@
 package ec.edu.epn.proyectodiseno.service;
 
-
-
 import java.util.List;
 
+import ec.edu.epn.proyectodiseno.model.entity.AsignacionProyecto;
 import ec.edu.epn.proyectodiseno.model.entity.Proyecto;
 import ec.edu.epn.proyectodiseno.model.enums.EstadoProyecto;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface IProyectoService {
     
@@ -13,7 +13,7 @@ public interface IProyectoService {
     
     Proyecto modificarProyecto(Long id, Proyecto proyecto);
     
-    void asignarPersonal(Long proyectoId, Long personalId, String rolEnProyecto);
+    void asignarPersonal(Long proyectoId, String cedula, String rolEnProyecto);
     
     List<Proyecto> obtenerProyectosActivos();
     
@@ -21,11 +21,15 @@ public interface IProyectoService {
     
     Proyecto buscarPorId(Long id);
     
-    Proyecto buscarPorCodigo(String codigoProyecto);
-    
     List<Proyecto> listarTodos();
     
     List<Proyecto> buscarPorEstado(EstadoProyecto estado);
     
     void eliminar(Long id);
+    
+    List<AsignacionProyecto> obtenerPersonalDeProyecto(Long proyectoId);
+    
+    void subirDocumento(Long proyectoId, MultipartFile archivo) throws java.io.IOException;
+    
+    byte[] descargarDocumento(Long proyectoId);
 }

@@ -13,21 +13,15 @@ public interface IPersonalService {
     
     Personal registrarPersonalConProyecto(PersonalRegistroDTO dto);
     
-    Personal modificarPersonal(Long id, Personal personal);
+    Personal modificarPersonal(String cedula, Personal personal);
     
-    void cambiarEstado(Long id, EstadoLaboral estado);
+    void cambiarEstado(String cedula, EstadoLaboral estado);
     
-    Personal buscarPorId(Long id);
-    
-    Personal buscarPorCodigoInterno(String codigoInterno);
-    
-    Personal buscarPorNui(String nui);
+    Personal buscarPorId(String cedula);
     
     List<Personal> buscarPorEstado(EstadoLaboral estado);
     
     List<Personal> listarTodos();
     
     Integer contabilizarPersonal(EstadoLaboral estado);
-    
-    void eliminar(Long id);
 }

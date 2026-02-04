@@ -1,17 +1,18 @@
 package ec.edu.epn.proyectodiseno.service;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ec.edu.epn.proyectodiseno.model.entity.AsignacionProyecto;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
 import ec.edu.epn.proyectodiseno.model.entity.Proyecto;
 import ec.edu.epn.proyectodiseno.model.enums.EstadoProyecto;
+import ec.edu.epn.proyectodiseno.repository.AsignacionProyectoRepository;
 import ec.edu.epn.proyectodiseno.repository.ProyectoRepository;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,14 +20,11 @@ public class ProyectoService implements IProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final IPersonalService personalService;
+    private final AsignacionProyectoRepository asignacionProyectoRepository;
 
     @Override
     @Transactional
     public Proyecto crearProyecto(Proyecto proyecto) {
-        if (proyecto.getCodigoProyecto() == null || proyecto.getCodigoProyecto().isEmpty()) {
-            proyecto.setCodigoProyecto(generarCodigoProyecto());
-        }
-        validarProyecto(proyecto);
         return proyectoRepository.save(proyecto);
     }
 
@@ -34,22 +32,31 @@ public class ProyectoService implements IProyectoService {
     @Transactional
     public Proyecto modificarProyecto(Long id, Proyecto proyecto) {
         Proyecto proyectoExistente = buscarPorId(id);
-        proyectoExistente.setTitulo(proyecto.getTitulo());
+        proyectoExistente.setNombre(proyecto.getNombre());
         proyectoExistente.setDescripcion(proyecto.getDescripcion());
         proyectoExistente.setFechaInicio(proyecto.getFechaInicio());
-        proyectoExistente.setFechaFinEstimada(proyecto.getFechaFinEstimada());
+        proyectoExistente.setFechaFin(proyecto.getFechaFin());
         proyectoExistente.setPresupuesto(proyecto.getPresupuesto());
+        proyectoExistente.setObjetivos(proyecto.getObjetivos());
+        proyectoExistente.setCliente(proyecto.getCliente());
         proyectoExistente.setEstadoProyecto(proyecto.getEstadoProyecto());
         return proyectoRepository.save(proyectoExistente);
     }
 
     @Override
     @Transactional
-    public void asignarPersonal(Long proyectoId, Long personalId, String rolEnProyecto) {
+    public void asignarPersonal(Long proyectoId, String cedula, String rolEnProyecto) {
         Proyecto proyecto = buscarPorId(proyectoId);
-        Personal personal = personalService.buscarPorId(personalId);
-        proyecto.asignarPersonal(personal, rolEnProyecto);
-        proyectoRepository.save(proyecto);
+        Personal personal = personalService.buscarPorId(cedula);
+        
+        AsignacionProyecto asignacion = AsignacionProyecto.builder()
+                .proyecto(proyecto)
+                .personal(personal)
+                .rolEnProyecto(rolEnProyecto)
+                .fechaAsignacion(LocalDate.now())
+                .build();
+                
+        asignacionProyectoRepository.save(asignacion);
     }
 
     @Override
@@ -62,7 +69,7 @@ public class ProyectoService implements IProyectoService {
     @Transactional
     public void cambiarEstado(Long id, EstadoProyecto estado) {
         Proyecto proyecto = buscarPorId(id);
-        proyecto.cambiarEstado(estado);
+        proyecto.setEstadoProyecto(estado);
         proyectoRepository.save(proyecto);
     }
 
@@ -71,13 +78,6 @@ public class ProyectoService implements IProyectoService {
     public Proyecto buscarPorId(Long id) {
         return proyectoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado con ID: " + id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Proyecto buscarPorCodigo(String codigoProyecto) {
-        return proyectoRepository.findByCodigoProyecto(codigoProyecto)
-                .orElseThrow(() -> new RuntimeException("Proyecto no encontrado con código: " + codigoProyecto));
     }
 
     @Override
@@ -96,17 +96,28 @@ public class ProyectoService implements IProyectoService {
     @Transactional
     public void eliminar(Long id) {
         Proyecto proyecto = buscarPorId(id);
-        proyecto.setActivo(false);
+        proyecto.setEstaActivo(false);
+        proyectoRepository.save(proyecto);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public List<AsignacionProyecto> obtenerPersonalDeProyecto(Long proyectoId) {
+        buscarPorId(proyectoId); // Verificar que el proyecto existe
+        return asignacionProyectoRepository.findByProyectoId(proyectoId);
+    }
+
+    @Override
+    @Transactional
+    public void subirDocumento(Long proyectoId, org.springframework.web.multipart.MultipartFile archivo) throws java.io.IOException {
+        Proyecto proyecto = buscarPorId(proyectoId);
+        proyecto.setDocumento(archivo.getBytes());
+        proyecto.setNombreDocumento(archivo.getOriginalFilename());
         proyectoRepository.save(proyecto);
     }
 
-    private String generarCodigoProyecto() {
-        return "PRY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    private void validarProyecto(Proyecto proyecto) {
-        if (proyectoRepository.existsByCodigoProyecto(proyecto.getCodigoProyecto())) {
-            throw new RuntimeException("Ya existe un proyecto con el código: " + proyecto.getCodigoProyecto());
-        }
-    }
-}
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] descargarDocumento(Long proyectoId) {
+        Proyecto proyecto = buscarPorId(proyectoId);
+        return proyecto.getDocumento();
+    }}

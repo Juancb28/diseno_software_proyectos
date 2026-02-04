@@ -28,11 +28,12 @@ import {
   SelectValue,
 } from '@/app/components/ui/select';
 import { Badge } from '@/app/components/ui/badge';
-import { Plus, Pencil, Search, FileText, Eye, Upload, CheckCircle } from 'lucide-react';
+import { Plus, Pencil, Search, FileText, Eye, Upload, CheckCircle, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { personalService, Personal as PersonalType } from '@/services/personal.service';
 import { contratosService } from '@/services/contratos.service';
 import { proyectosService, Proyecto } from '@/services/proyectos.service';
+import { usuariosService, Usuario } from '@/services/usuarios.service';
 
 export function Personal() {
   const { usuario } = useAuth();
@@ -47,6 +48,7 @@ export function Personal() {
   const [loading, setLoading] = useState(true);
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [currentContratoId, setCurrentContratoId] = useState<number | null>(null);
+  const [rolesByCedula, setRolesByCedula] = useState<Record<string, Usuario['tipoRol']>>({});
   const [formData, setFormData] = useState({
     cedula: '',
     nombres: '',
@@ -59,6 +61,8 @@ export function Personal() {
     departamento: '',
     estadoLaboral: 'ACTIVO' as PersonalType['estadoLaboral'],
     proyectoId: '',
+    password: '',
+    tipoRol: 'EMPLEADO' as 'ADMINISTRADOR' | 'JEFATURA' | 'DIRECTOR_PROYECTO' | 'EMPLEADO',
   });
 
   const isDirector = usuario?.tipoRol === 'DIRECTOR_PROYECTO';
@@ -71,12 +75,42 @@ export function Personal() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [personalData, proyectosData] = await Promise.all([
+      const results = await Promise.allSettled([
         personalService.listarTodos(),
-        proyectosService.listarTodos()
+        proyectosService.listarTodos(),
+        usuariosService.listarTodos(),
       ]);
-      setPersonal(personalData);
-      setProyectos(proyectosData);
+
+      const personalResult = results[0];
+      const proyectosResult = results[1];
+      const usuariosResult = results[2];
+
+      if (personalResult.status === 'fulfilled') {
+        setPersonal(personalResult.value);
+      } else {
+        toast.error('Error al cargar personal');
+        console.error(personalResult.reason);
+      }
+
+      if (proyectosResult.status === 'fulfilled') {
+        setProyectos(proyectosResult.value);
+      } else {
+        toast.error('Error al cargar proyectos');
+        console.error(proyectosResult.reason);
+      }
+
+      if (usuariosResult.status === 'fulfilled') {
+        const map: Record<string, Usuario['tipoRol']> = {};
+        usuariosResult.value.forEach((u) => {
+          if (u.username) {
+            map[u.username] = u.tipoRol;
+          }
+        });
+        setRolesByCedula(map);
+      } else {
+        toast.error('Error al cargar usuarios');
+        console.error(usuariosResult.reason);
+      }
     } catch (error) {
       toast.error('Error al cargar datos');
       console.error(error);
@@ -121,6 +155,37 @@ export function Personal() {
     }
   };
 
+  const handleTogglePersonal = async (p: PersonalType) => {
+    const nextEstado = p.estadoLaboral === 'INACTIVO' ? 'ACTIVO' : 'INACTIVO';
+    const confirmed = window.confirm(`¿Cambiar el estado de ${p.nombres} ${p.apellidos} a ${nextEstado}?`);
+    if (!confirmed) return;
+    try {
+      await personalService.cambiarEstado(p.cedula, nextEstado);
+      toast.success(`Estado actualizado a ${nextEstado}`);
+      await cargarDatos();
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al cambiar el estado');
+    }
+  };
+
+  const getEstadoBadge = (estado: PersonalType['estadoLaboral']) => {
+    if (estado === 'ACTIVO') return 'bg-green-100 text-green-800';
+    if (estado === 'INACTIVO') return 'bg-orange-100 text-orange-800';
+    if (estado === 'SUSPENDIDO') return 'bg-yellow-100 text-yellow-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
+  const getRolBadge = (rol?: Usuario['tipoRol']) => {
+    const colors: Record<string, string> = {
+      ADMINISTRADOR: 'bg-red-100 text-red-800',
+      JEFATURA: 'bg-blue-100 text-blue-800',
+      DIRECTOR_PROYECTO: 'bg-green-100 text-green-800',
+      EMPLEADO: 'bg-purple-100 text-purple-800',
+    };
+    return colors[rol || ''] || 'bg-gray-100 text-gray-800';
+  };
+
   const handleSave = async () => {
     try {
       if (editingPersonal) {
@@ -138,6 +203,14 @@ export function Personal() {
           estadoLaboral: formData.estadoLaboral,
         };
         await personalService.modificar(editingPersonal.cedula, personalData);
+
+        if (formData.password) {
+          const usuario = await usuariosService.buscarPorUsername(editingPersonal.cedula);
+          await usuariosService.modificar(usuario.id, {
+            username: usuario.username,
+            password: formData.password,
+          });
+        }
         
         // Manejo de Contrato en Edición
         if (selectedFile) {
@@ -152,6 +225,10 @@ export function Personal() {
         toast.success('Personal actualizado correctamente');
       } else {
         // Crear nuevo personal
+        if (!formData.password) {
+          toast.error('Debe ingresar una contraseña');
+          return;
+        }
         const personalData = {
           cedula: formData.cedula,
           nombres: formData.nombres,
@@ -190,6 +267,14 @@ export function Personal() {
              await contratosService.crear(cedula, contratoData, selectedFile);
         }
 
+        // Crear usuario para login
+        await usuariosService.registrar({
+          username: formData.cedula,
+          password: formData.password,
+          tipoRol: formData.tipoRol,
+          estado: true,
+        }, formData.cedula);
+
         toast.success('Personal creado correctamente');
       }
       
@@ -209,6 +294,8 @@ export function Personal() {
         departamento: '',
         estadoLaboral: 'ACTIVO',
         proyectoId: '',
+        password: '',
+        tipoRol: 'EMPLEADO',
       });
       cargarDatos();
     } catch (error) {
@@ -287,6 +374,8 @@ export function Personal() {
       departamento: personal.departamento || '',
       estadoLaboral: personal.estadoLaboral || 'ACTIVO',
       proyectoId: '',
+      password: '',
+      tipoRol: 'EMPLEADO',
     });
     
     if (personal.tieneContrato) {
@@ -385,6 +474,7 @@ export function Personal() {
                   departamento: '',
                   estadoLaboral: 'ACTIVO',
                   proyectoId: '',
+                  password: '',
                 });
               }}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -452,6 +542,35 @@ export function Personal() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder={editingPersonal ? "Nueva contraseña (opcional)" : "Ingrese una contraseña"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+                {!editingPersonal && (
+                  <div className="space-y-2">
+                    <Label htmlFor="tipoRol">Rol de Usuario</Label>
+                    <Select
+                      value={formData.tipoRol}
+                      onValueChange={(value) => setFormData({ ...formData, tipoRol: value as typeof formData.tipoRol })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ADMINISTRADOR">Administrador</SelectItem>
+                        <SelectItem value="JEFATURA">Jefatura</SelectItem>
+                        <SelectItem value="DIRECTOR_PROYECTO">Director de Proyecto</SelectItem>
+                        <SelectItem value="EMPLEADO">Empleado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="tipoContrato">Tipo de Contrato</Label>
@@ -582,6 +701,8 @@ export function Personal() {
                 <TableHead>Proyecto</TableHead>
                 <TableHead>Tipo Contrato</TableHead>
                 <TableHead>Contrato</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -608,6 +729,16 @@ export function Personal() {
                       </Badge>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Badge className={getEstadoBadge(p.estadoLaboral)}>
+                      {p.estadoLaboral}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getRolBadge(rolesByCedula[p.cedula])}>
+                      {rolesByCedula[p.cedula] || 'N/A'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {p.tieneContrato ? (
@@ -631,6 +762,9 @@ export function Personal() {
                       )}
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}>
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleTogglePersonal(p)}>
+                        <Power className={`h-4 w-4 ${p.estadoLaboral === 'INACTIVO' ? 'text-green-600' : 'text-amber-600'}`} />
                       </Button>
                     </div>
                   </TableCell>

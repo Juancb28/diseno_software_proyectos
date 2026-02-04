@@ -34,8 +34,11 @@ export const usuariosService = {
   },
 
   // Registrar usuario
-  registrar: async (usuario: Partial<Usuario>): Promise<Usuario> => {
-    const response = await apiClient.post('/usuarios', usuario);
+  registrar: async (usuario: Partial<Usuario>, cedula?: string): Promise<Usuario> => {
+    const response = await apiClient.post(
+      cedula ? `/usuarios?cedula=${encodeURIComponent(cedula)}` : '/usuarios',
+      usuario
+    );
     return response.data;
   },
 
@@ -54,6 +57,12 @@ export const usuariosService = {
   // Buscar por correo
   buscarPorCorreo: async (correo: string): Promise<Usuario> => {
     const response = await apiClient.get(`/usuarios/correo/${correo}`);
+    return response.data;
+  },
+
+  // Buscar por username
+  buscarPorUsername: async (username: string): Promise<Usuario> => {
+    const response = await apiClient.get(`/usuarios/username/${username}`);
     return response.data;
   },
 

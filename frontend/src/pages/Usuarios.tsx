@@ -52,7 +52,7 @@ export function Usuarios() {
     try {
       setLoading(true);
       const data = await usuariosService.listarTodos();
-      setUsuarios(data);
+      setUsuarios(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error('Error al cargar usuarios');
       console.error(error);

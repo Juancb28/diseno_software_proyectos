@@ -1,6 +1,7 @@
 package ec.edu.epn.proyectodiseno.model.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,6 +26,7 @@ public class Usuario extends Log {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "personal_id")
+    @JsonIgnore
     private Personal personal;
 
     @Enumerated(EnumType.STRING)

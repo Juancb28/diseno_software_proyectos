@@ -112,6 +112,15 @@ public class PersonalService implements IPersonalService {
     public Integer contabilizarPersonal(EstadoLaboral estado) {
         return personalRepository.contarPorEstado(estado);
     }
+
+    @Override
+    @Transactional
+    public void eliminarPersonal(String cedula) {
+        Personal personal = buscarPorId(cedula);
+        personal.setEstaActivo(false);
+        personal.setEstadoLaboral(EstadoLaboral.INACTIVO);
+        personalRepository.save(personal);
+    }
     
     private void validarDatosPersonal(Personal personal) {
         if (personal.getCedula() == null || personal.getCedula().length() != 10) {

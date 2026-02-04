@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { proyectosService, Proyecto as ProyectoAPI, AsignacionProyecto } from '@/services/proyectos.service';
+import { avancesService, Avance as AvanceAPI } from '@/services/avances.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
@@ -34,6 +36,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/app/components/ui/alert-dialog';
 import { 
   ArrowLeft, 
@@ -51,89 +54,113 @@ import { toast } from 'sonner';
 
 interface Avance {
   id: number;
-  semestre: string;
-  fechaSubida: string;
-  archivo: string;
-  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  semestre?: string;
+  fechaCreacion: string;
+  nombreArchivo?: string;
+  estadoAvance: 'APROBADO' | 'PENDIENTE' | 'RECHAZADO';
   observaciones?: string;
-  revisadoPor?: string;
   fechaRevision?: string;
+  director?: {
+    id: number;
+    nombre: string;
+  };
+  jefatura?: {
+    id: number;
+    nombre: string;
+  };
 }
 
 interface Proyecto {
   id: number;
   nombre: string;
-  descripcion: string;
-  director: string;
-  estado: 'ACTIVO' | 'PAUSADO' | 'FINALIZADO';
-  fechaInicio: string;
+  descripcion?: string;
+  codigoProyecto?: string;
+  director: {
+    cedula: string;
+    nombres: string;
+    apellidos: string;
+  } | null;
+  estadoProyecto: 'PLANIFICACION' | 'EN_EJECUCION' | 'SUSPENDIDO' | 'FINALIZADO' | 'CANCELADO';
+  fechaInicio?: string;
   fechaFin?: string;
-  objetivos: string;
-  presupuesto?: string;
-  ayudantes: Array<{ id: number; nombre: string; rol: string }>;
+  objetivos?: string;
+  presupuesto?: number;
+  cliente?: string;
+  ayudantes: Array<{ 
+    cedula: string;
+    nombres: string;
+    apellidos: string;
+    rolEnProyecto: string;
+  }>;
   avances: Avance[];
 }
-
-const MOCK_PROYECTO: Proyecto = {
-  id: 1,
-  nombre: 'Sistema de Gestión Académica',
-  descripcion: 'Desarrollo de plataforma web para gestión académica integral de la institución',
-  director: 'Carlos Ramírez',
-  estado: 'ACTIVO',
-  fechaInicio: '2025-01-15',
-  objetivos: 'Desarrollar un sistema completo de gestión académica que permita la administración eficiente de estudiantes, profesores, y proyectos de investigación.',
-  presupuesto: '$15,000',
-  ayudantes: [
-    { id: 1, nombre: 'Ana López', rol: 'Desarrolladora Frontend' },
-    { id: 2, nombre: 'Pedro Martínez', rol: 'Desarrollador Backend' },
-    { id: 3, nombre: 'Laura Sánchez', rol: 'Analista de Datos' },
-  ],
-  avances: [
-    {
-      id: 1,
-      semestre: '2025-2',
-      fechaSubida: '2026-02-01T10:30:00',
-      archivo: 'avance_2025-2.pdf',
-      estado: 'PENDIENTE',
-    },
-    {
-      id: 2,
-      semestre: '2025-1',
-      fechaSubida: '2025-08-15T14:20:00',
-      archivo: 'avance_2025-1.pdf',
-      estado: 'APROBADO',
-      observaciones: 'Excelente progreso. Cumple con todos los objetivos planteados.',
-      revisadoPor: 'María González',
-      fechaRevision: '2025-08-20T09:00:00'
-    },
-    {
-      id: 3,
-      semestre: '2024-2',
-      fechaSubida: '2025-02-10T16:45:00',
-      archivo: 'avance_2024-2.pdf',
-      estado: 'RECHAZADO',
-      observaciones: 'El informe necesita más detalles sobre la metodología empleada y los resultados obtenidos.',
-      revisadoPor: 'María González',
-      fechaRevision: '2025-02-15T11:30:00'
-    },
-  ]
-};
 
 export function ProyectoDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const { addNotification } = useNotifications();
-  const [proyecto, setProyecto] = useState<Proyecto>(MOCK_PROYECTO);
+  const [proyecto, setProyecto] = useState<Proyecto | null>(null);
+  const [avances, setAvances] = useState<Avance[]>([]);
+  const [loading, setLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedAvance, setSelectedAvance] = useState<Avance | null>(null);
   const [observaciones, setObservaciones] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [semestre, setSemestre] = useState('');
+  const [uploadingFile, setUploadingFile] = useState(false);
 
-  const isJefatura = usuario?.rol === 'JEFATURA';
-  const isDirector = usuario?.rol === 'DIRECTOR';
+  const isJefatura = usuario?.tipoRol === 'JEFATURA';
+  const isDirector = usuario?.tipoRol === 'DIRECTOR_PROYECTO';
+
+  // Cargar datos del proyecto y avances
+  useEffect(() => {
+    const cargarDatos = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const [proyectoData, personalData, avancesData] = await Promise.all([
+          proyectosService.buscarPorId(Number(id)),
+          proyectosService.obtenerPersonal(Number(id)),
+          avancesService.listarPorProyecto(Number(id))
+        ]);
+        
+        // Mapear datos del backend al formato del frontend
+        const proyectoMapeado: Proyecto = {
+          id: proyectoData.id!,
+          nombre: proyectoData.nombre,
+          descripcion: proyectoData.descripcion || '',
+          codigoProyecto: proyectoData.codigoProyecto,
+          director: proyectoData.director || null,
+          estadoProyecto: proyectoData.estadoProyecto,
+          fechaInicio: proyectoData.fechaInicio,
+          fechaFin: proyectoData.fechaFin,
+          objetivos: proyectoData.objetivos || '',
+          presupuesto: proyectoData.presupuesto,
+          cliente: proyectoData.cliente,
+          ayudantes: personalData.map((asignacion: AsignacionProyecto) => ({
+            cedula: asignacion.personal.cedula,
+            nombres: asignacion.personal.nombres,
+            apellidos: asignacion.personal.apellidos,
+            rolEnProyecto: asignacion.rolEnProyecto
+          })),
+          avances: []
+        };
+        
+        setProyecto(proyectoMapeado);
+        setAvances(avancesData);
+      } catch (error) {
+        console.error('Error al cargar proyecto:', error);
+        toast.error('Error al cargar la información del proyecto');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, [id]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -150,96 +177,142 @@ export function ProyectoDetalle() {
     }
   };
 
-  const handleUploadAvance = () => {
+  const handleUploadAvance = async () => {
     if (!selectedFile || !semestre) {
       toast.error('Seleccione un archivo y especifique el semestre');
       return;
     }
 
-    const nuevoAvance: Avance = {
-      id: Math.max(...proyecto.avances.map(a => a.id), 0) + 1,
-      semestre,
-      fechaSubida: new Date().toISOString(),
-      archivo: selectedFile.name,
-      estado: 'PENDIENTE'
-    };
+    if (!usuario?.id || !proyecto?.id) {
+      toast.error('Error: información del usuario o proyecto no disponible');
+      return;
+    }
 
-    setProyecto({
-      ...proyecto,
-      avances: [nuevoAvance, ...proyecto.avances]
-    });
+    try {
+      setUploadingFile(true);
+      const nuevoAvance = await avancesService.subirAvance(
+        proyecto.id,
+        usuario.id,
+        semestre,
+        selectedFile
+      );
 
-    toast.success('Avance subido exitosamente');
-    setUploadDialogOpen(false);
-    setSelectedFile(null);
-    setSemestre('');
+      setAvances([nuevoAvance, ...avances]);
+      toast.success('Avance subido exitosamente');
+      setUploadDialogOpen(false);
+      setSelectedFile(null);
+      setSemestre('');
+    } catch (error) {
+      console.error('Error al subir avance:', error);
+      toast.error('Error al subir el avance');
+    } finally {
+      setUploadingFile(false);
+    }
   };
 
-  const handleAprobar = () => {
-    if (!selectedAvance) return;
-
-    const avancesActualizados = proyecto.avances.map(a =>
-      a.id === selectedAvance.id
-        ? {
-            ...a,
-            estado: 'APROBADO' as const,
-            observaciones,
-            revisadoPor: usuario?.nombre,
-            fechaRevision: new Date().toISOString()
-          }
-        : a
-    );
-
-    setProyecto({ ...proyecto, avances: avancesActualizados });
-
-    // Agregar notificación para el director
-    addNotification({
-      titulo: 'Avance Aprobado',
-      mensaje: `El avance del semestre ${selectedAvance.semestre} ha sido aprobado`,
-      tipo: 'SUCCESS',
-      link: `/proyectos/${id}`
-    });
-
-    toast.success('Avance aprobado correctamente');
-    setReviewDialogOpen(false);
-    setSelectedAvance(null);
-    setObservaciones('');
+  const handleDescargarPdf = async (avanceId: number, nombreArchivo?: string) => {
+    try {
+      const blob = await avancesService.descargarPdf(avanceId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nombreArchivo || 'avance.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF descargado exitosamente');
+    } catch (error) {
+      console.error('Error al descargar PDF:', error);
+      toast.error('Error al descargar el PDF');
+    }
   };
 
-  const handleRechazar = () => {
-    if (!selectedAvance) return;
+  const handleEliminarPdf = async (avanceId: number) => {
+    try {
+      await avancesService.eliminarPdf(avanceId);
+      const avancesActualizados = avances.map(a =>
+        a.id === avanceId
+          ? { ...a, nombreArchivo: undefined }
+          : a
+      );
+      setAvances(avancesActualizados);
+      toast.success('PDF eliminado exitosamente');
+    } catch (error) {
+      console.error('Error al eliminar PDF:', error);
+      toast.error('Error al eliminar el PDF');
+    }
+  };
+
+  const handleAprobar = async () => {
+    if (!selectedAvance || !usuario?.id) return;
+
+    try {
+      const avanceActualizado = await avancesService.aprobarAvance(
+        selectedAvance.id,
+        usuario.id,
+        observaciones
+      );
+
+      const avancesActualizados = avances.map(a =>
+        a.id === selectedAvance.id ? avanceActualizado : a
+      );
+      setAvances(avancesActualizados);
+
+      // Agregar notificación para el director
+      addNotification({
+        titulo: 'Avance Aprobado',
+        mensaje: `El avance del semestre ${selectedAvance.semestre} ha sido aprobado`,
+        tipo: 'SUCCESS',
+        link: `/proyectos/${id}`
+      });
+
+      toast.success('Avance aprobado correctamente');
+      setReviewDialogOpen(false);
+      setSelectedAvance(null);
+      setObservaciones('');
+    } catch (error) {
+      console.error('Error al aprobar avance:', error);
+      toast.error('Error al aprobar el avance');
+    }
+  };
+
+  const handleRechazar = async () => {
+    if (!selectedAvance || !usuario?.id) return;
 
     if (!observaciones.trim()) {
       toast.error('Debe proporcionar observaciones para rechazar el avance');
       return;
     }
 
-    const avancesActualizados = proyecto.avances.map(a =>
-      a.id === selectedAvance.id
-        ? {
-            ...a,
-            estado: 'RECHAZADO' as const,
-            observaciones,
-            revisadoPor: usuario?.nombre,
-            fechaRevision: new Date().toISOString()
-          }
-        : a
-    );
+    try {
+      const avanceActualizado = await avancesService.rechazarAvance(
+        selectedAvance.id,
+        usuario.id,
+        observaciones
+      );
 
-    setProyecto({ ...proyecto, avances: avancesActualizados });
+      const avancesActualizados = avances.map(a =>
+        a.id === selectedAvance.id ? avanceActualizado : a
+      );
+      setAvances(avancesActualizados);
 
-    // Agregar notificación para el director
-    addNotification({
-      titulo: 'Avance Rechazado',
-      mensaje: `El avance del semestre ${selectedAvance.semestre} requiere correcciones`,
-      tipo: 'ERROR',
-      link: `/proyectos/${id}`
-    });
+      // Agregar notificación para el director
+      addNotification({
+        titulo: 'Avance Rechazado',
+        mensaje: `El avance del semestre ${selectedAvance.semestre} requiere correcciones`,
+        tipo: 'ERROR',
+        link: `/proyectos/${id}`
+      });
 
-    toast.error('Avance rechazado');
-    setReviewDialogOpen(false);
-    setSelectedAvance(null);
-    setObservaciones('');
+      toast.error('Avance rechazado');
+      setReviewDialogOpen(false);
+      setSelectedAvance(null);
+      setObservaciones('');
+    } catch (error) {
+      console.error('Error al rechazar avance:', error);
+      toast.error('Error al rechazar el avance');
+    }
   };
 
   const openReviewDialog = (avance: Avance) => {
@@ -258,14 +331,30 @@ export function ProyectoDetalle() {
   };
 
   const calcularEstadisticas = () => {
-    const total = proyecto.avances.length;
-    const aprobados = proyecto.avances.filter(a => a.estado === 'APROBADO').length;
-    const rechazados = proyecto.avances.filter(a => a.estado === 'RECHAZADO').length;
-    const pendientes = proyecto.avances.filter(a => a.estado === 'PENDIENTE').length;
-    const tasaAprobacion = total > 0 ? ((aprobados / total) * 100).toFixed(0) : 0;
+    const total = avances.length;
+    const aprobados = avances.filter(a => a.estadoAvance === 'APROBADO').length;
+    const rechazados = avances.filter(a => a.estadoAvance === 'RECHAZADO').length;
+    const pendientes = avances.filter(a => a.estadoAvance === 'PENDIENTE').length;
+    const tasaAprobacion = total > 0 ? ((aprobados / total) * 100).toFixed(0) : '0';
 
     return { total, aprobados, rechazados, pendientes, tasaAprobacion };
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Cargando proyecto...</div>
+      </div>
+    );
+  }
+
+  if (!proyecto) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Proyecto no encontrado</div>
+      </div>
+    );
+  }
 
   const stats = calcularEstadisticas();
 
@@ -277,14 +366,17 @@ export function ProyectoDetalle() {
         </Button>
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-gray-900">{proyecto.nombre}</h1>
-          <p className="text-gray-600 mt-1">Director: {proyecto.director}</p>
+          <p className="text-gray-600 mt-1">
+            Director: {proyecto.director ? `${proyecto.director.nombres} ${proyecto.director.apellidos}` : 'No asignado'}
+          </p>
         </div>
         <Badge className={
-          proyecto.estado === 'ACTIVO' ? 'bg-green-100 text-green-800' :
-          proyecto.estado === 'PAUSADO' ? 'bg-yellow-100 text-yellow-800' :
+          proyecto.estadoProyecto === 'EN_EJECUCION' ? 'bg-green-100 text-green-800' :
+          proyecto.estadoProyecto === 'PLANIFICACION' ? 'bg-yellow-100 text-yellow-800' :
+          proyecto.estadoProyecto === 'SUSPENDIDO' ? 'bg-orange-100 text-orange-800' :
           'bg-gray-100 text-gray-800'
         }>
-          {proyecto.estado}
+          {proyecto.estadoProyecto.replace('_', ' ')}
         </Badge>
       </div>
 
@@ -305,7 +397,7 @@ export function ProyectoDetalle() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-blue-600" />
                   <span className="text-lg font-semibold">
-                    {new Date(proyecto.fechaInicio).toLocaleDateString('es-ES')}
+                    {proyecto.fechaInicio ? new Date(proyecto.fechaInicio).toLocaleDateString('es-ES') : 'No definida'}
                   </span>
                 </div>
               </CardContent>
@@ -316,7 +408,7 @@ export function ProyectoDetalle() {
               </CardHeader>
               <CardContent>
                 <div className="text-lg font-semibold text-green-600">
-                  {proyecto.presupuesto || 'No especificado'}
+                  {proyecto.presupuesto ? `$${proyecto.presupuesto.toLocaleString('es-ES', { minimumFractionDigits: 2 })}` : 'No especificado'}
                 </div>
               </CardContent>
             </Card>
@@ -369,17 +461,23 @@ export function ProyectoDetalle() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">{proyecto.director}</TableCell>
-                    <TableCell>
-                      <Badge className="bg-blue-100 text-blue-800">Director</Badge>
-                    </TableCell>
-                  </TableRow>
-                  {proyecto.ayudantes.map((ayudante) => (
-                    <TableRow key={ayudante.id}>
-                      <TableCell className="font-medium">{ayudante.nombre}</TableCell>
+                  {proyecto.director && (
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        {proyecto.director.nombres} {proyecto.director.apellidos}
+                      </TableCell>
                       <TableCell>
-                        <Badge className="bg-purple-100 text-purple-800">{ayudante.rol}</Badge>
+                        <Badge className="bg-blue-100 text-blue-800">Director</Badge>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {proyecto.ayudantes.map((ayudante) => (
+                    <TableRow key={ayudante.cedula}>
+                      <TableCell className="font-medium">
+                        {ayudante.nombres} {ayudante.apellidos}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-purple-100 text-purple-800">{ayudante.rolEnProyecto}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -451,9 +549,17 @@ export function ProyectoDetalle() {
                         <li>• Detallar metodología y resultados</li>
                       </ul>
                     </div>
-                    <Button onClick={handleUploadAvance} className="w-full" disabled={!selectedFile || !semestre}>
+                    <Button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleUploadAvance();
+                      }} 
+                      className="w-full" 
+                      disabled={!selectedFile || !semestre || uploadingFile}
+                    >
                       <Upload className="h-4 w-4 mr-2" />
-                      Subir Avance
+                      {uploadingFile ? 'Subiendo...' : 'Subir Avance'}
                     </Button>
                   </div>
                 </DialogContent>
@@ -504,7 +610,7 @@ export function ProyectoDetalle() {
             <CardHeader>
               <CardTitle>Historial de Avances</CardTitle>
               <CardDescription>
-                {proyecto.avances.length} avance(s) registrado(s)
+                {avances.length} avance(s) registrado(s)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -512,19 +618,21 @@ export function ProyectoDetalle() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Semestre</TableHead>
-                    <TableHead>Fecha Subida</TableHead>
-                    <TableHead>Archivo</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Revisado Por</TableHead>
+                    <TableHead>Fecha Creación</TableHead>
+                    <TableHead>Estado PDF</TableHead>
+                    <TableHead>Estado Avance</TableHead>
+                    <TableHead>Director</TableHead>
+                    <TableHead>Jefatura</TableHead>
+                    <TableHead>Fecha Revisión</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {proyecto.avances.map((avance) => (
+                  {avances.map((avance) => (
                     <TableRow key={avance.id}>
-                      <TableCell className="font-medium">{avance.semestre}</TableCell>
+                      <TableCell className="font-medium">{avance.semestre || 'N/A'}</TableCell>
                       <TableCell>
-                        {new Date(avance.fechaSubida).toLocaleDateString('es-ES', {
+                        {new Date(avance.fechaCreacion).toLocaleDateString('es-ES', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -533,56 +641,103 @@ export function ProyectoDetalle() {
                         })}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-gray-400" />
-                          {avance.archivo}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getEstadoBadge(avance.estado)}>
-                          {avance.estado}
+                        <Badge className={
+                          avance.nombreArchivo ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }>
+                          {avance.nombreArchivo ? 'SUBIDO' : 'PENDIENTE'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {avance.revisadoPor || (
+                        <Badge className={getEstadoBadge(avance.estadoAvance)}>
+                          {avance.estadoAvance}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {avance.directorNombre || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {avance.jefaturaNombre || (
                           <span className="text-gray-400 flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            Pendiente
+                            Sin revisar
                           </span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        {avance.fechaRevision 
+                          ? new Date(avance.fechaRevision).toLocaleDateString('es-ES', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })
+                          : '-'
+                        }
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toast.info('Visualizando PDF...')}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {isJefatura && avance.estado === 'PENDIENTE' && (
+                          {avance.nombreArchivo && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => openReviewDialog(avance)}
-                                className="text-blue-600 hover:text-blue-700"
+                                onClick={() => handleDescargarPdf(avance.id, avance.nombreArchivo)}
+                                title="Descargar PDF"
                               >
-                                Revisar
+                                <FileText className="h-4 w-4" />
                               </Button>
+                              {isDirector && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700"
+                                      title="Eliminar PDF"
+                                    >
+                                      <XCircle className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>¿Eliminar PDF?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Esta acción eliminará el PDF del avance. Podrás subir uno nuevo posteriormente.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleEliminarPdf(avance.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Eliminar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </>
                           )}
-                          {(avance.estado === 'APROBADO' || avance.estado === 'RECHAZADO') && avance.observaciones && (
+                          {isJefatura && avance.estadoAvance === 'PENDIENTE' && avance.nombreArchivo && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openReviewDialog(avance)}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              Revisar
+                            </Button>
+                          )}
+                          {avance.observaciones && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                setSelectedAvance(avance);
-                                setObservaciones(avance.observaciones || '');
-                                toast.info('Ver observaciones');
+                                toast.info(avance.observaciones || 'Sin observaciones');
                               }}
+                              title="Ver observaciones"
                             >
-                              <FileText className="h-4 w-4" />
+                              <Eye className="h-4 w-4" />
                             </Button>
                           )}
                         </div>

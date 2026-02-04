@@ -20,7 +20,10 @@ public class Avance extends Log {
     @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(name = "semestre", length = 50)
+    private String semestre;
+
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
 
     @Column(name = "fecha_reporte")

@@ -6,6 +6,7 @@ export type TipoRol = 'ADMINISTRADOR' | 'JEFATURA' | 'DIRECTOR_PROYECTO' | 'EMPL
 export interface Usuario {
   id: number;
   username: string;
+  codigo?: string;
   tipoRol: TipoRol;
   estado: boolean;
   estaActivo: boolean;
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const usuarioData: Usuario = {
           id: response.usuario.id,
           username: response.usuario.username,
+          codigo: response.usuario.codigo,
           tipoRol: response.usuario.tipoRol,
           estado: response.usuario.estado,
           estaActivo: response.usuario.estaActivo

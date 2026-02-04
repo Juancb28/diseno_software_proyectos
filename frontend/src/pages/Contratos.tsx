@@ -36,6 +36,9 @@ export function Contratos() {
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const isAyudante = usuario?.tipoRol === 'EMPLEADO';
+  const isAdmin = usuario?.tipoRol === 'ADMINISTRADOR';
+
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -43,27 +46,41 @@ export function Contratos() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [contratosData, personalData] = await Promise.all([
-        contratosService.listarTodos(),
-        personalService.listarTodos()
-      ]);
-      setContratos(contratosData);
-      setPersonalList(personalData);
+      
+      if (isAyudante) {
+        // Para ayudantes: cargar solo sus contratos usando su cédula
+        const cedula = usuario?.codigo || usuario?.username;
+        if (cedula) {
+          console.log('Cargando contratos para cédula:', cedula);
+          const contratosData = await contratosService.buscarPorPersonal(cedula);
+          console.log('Contratos cargados:', contratosData);
+          setContratos(contratosData);
+        }
+      } else {
+        // Para admin/jefatura: cargar todos los contratos
+        const [contratosData, personalData] = await Promise.all([
+          contratosService.listarTodos(),
+          personalService.listarTodos()
+        ]);
+        setContratos(contratosData);
+        setPersonalList(personalData);
+      }
     } catch (error) {
       toast.error('Error al cargar contratos');
-      console.error('Error:', error);
+      console.error('Error al cargar contratos:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  const isAyudante = usuario?.tipoRol === 'EMPLEADO';
-  const isAdmin = usuario?.tipoRol === 'ADMINISTRADOR';
   
   const filteredContratos = contratos.filter(contrato => {
+    // Para ayudantes: ya se cargaron solo sus contratos con buscarPorPersonal()
+    // No necesitamos filtrar de nuevo
     if (isAyudante) {
-      return contrato.personal.cedula === usuario?.codigo || contrato.personal.codigo === usuario?.codigo;
+      return true;
     }
+    
+    // Para admin/jefatura: mostrar todos
     return true;
   });
 
@@ -87,13 +104,33 @@ export function Contratos() {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedContrato) {
+    if (!selectedFile) {
       toast.error('Seleccione un archivo PDF');
       return;
     }
     
+    // Usar codigo si está disponible, sino usar username como fallback
+    const cedula = usuario?.codigo || usuario?.username;
+    
+    if (!cedula) {
+      toast.error('Usuario no identificado');
+      return;
+    }
+    
     try {
-      await contratosService.subirDocumento(selectedContrato.id, selectedFile);
+      // Si ya existe un contrato, usar subirDocumento
+      if (selectedContrato && selectedContrato.id) {
+        await contratosService.subirDocumento(selectedContrato.id, selectedFile);
+      } else {
+        // Si no existe contrato, crear uno nuevo con el archivo
+        const contratoData = {
+          fechaInicio: new Date().toISOString().split('T')[0],
+          salario: 0,
+          estaActivo: true
+        };
+        await contratosService.crear(cedula, contratoData, selectedFile);
+      }
+      
       toast.success('Contrato subido exitosamente');
       await cargarDatos();
       setUploadDialogOpen(false);
@@ -260,7 +297,7 @@ export function Contratos() {
                             size="sm"
                             onClick={async () => {
                               try {
-                                const blob = await contratosService.descargarDocumento(contrato.id);
+                                const blob = await contratosService.descargarArchivo(contrato.id!);
                                 const url = window.URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
@@ -277,7 +314,10 @@ export function Contratos() {
                           </Button>
                         </>
                       )}
-                      {!contrato.archivoSubido && isAyudante && (contrato.personal.cedula === usuario?.codigo || contrato.personal.codigo === usuario?.codigo) && (
+                      {!contrato.archivoSubido && isAyudante && contrato.personal && (() => {
+                        const cedulaUsuario = usuario?.codigo || usuario?.username;
+                        return contrato.personal.cedula === cedulaUsuario || contrato.personal.codigo === cedulaUsuario;
+                      })() && (
                         <Button
                           variant="ghost"
                           size="sm"

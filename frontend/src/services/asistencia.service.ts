@@ -16,6 +16,7 @@ export interface AsistenciaApi {
     | 'SALIDA';
   estadoAsistencia: 'PUNTUAL' | 'RETRASO' | 'SALIDA_ANTICIPADA' | 'AUSENTE' | 'JUSTIFICADO' | 'PRESENTE';
   comentarios?: string;
+  proyecto?: { id: number; nombre: string };
 }
 
 export const asistenciaService = {

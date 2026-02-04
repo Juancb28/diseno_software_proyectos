@@ -1,0 +1,1203 @@
+@startuml
+' ===============================================
+' DIAGRAMA DE CLASES - SISTEMA DE GESTIÓN DE PROYECTOS
+' ===============================================
+
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+skinparam package {
+    BackgroundColor<<base>> #F5F5F5
+    BackgroundColor<<enums>> #FFF9C4
+    BackgroundColor<<entity>> #E3F2FD
+    BackgroundColor<<dto>> #E8F5E9
+    BackgroundColor<<role>> #FCE4EC
+    BackgroundColor<<repository>> #FFF3E0
+    BackgroundColor<<service>> #E8F5E9
+    BackgroundColor<<controller>> #FFF3E0
+    BackgroundColor<<config>> #F5F5F5
+    BackgroundColor<<exception>> #FCE4EC
+}
+
+' ===============================================
+' MÓDULO: BASE
+' ===============================================
+package "base" <<base>> {
+    abstract class Log {
+        # Long id
+        # LocalDateTime fechaCreacion
+        # LocalDateTime fechaActualizacion
+        # Boolean estaActivo
+
+        + getId(): Long
+        + getFechaCreacion(): LocalDateTime
+        + getFechaActualizacion(): LocalDateTime
+        + getEstaActivo(): Boolean
+        + setActivo(Boolean activo): void
+    }
+}
+
+' ===============================================
+' MÓDULO: ENUMS
+' ===============================================
+package "enums" <<enums>> {
+    enum TipoRol {
+        ADMINISTRADOR
+        DIRECTOR_PROYECTO
+        JEFATURA
+        PERSONAL
+    }
+
+    enum EstadoLaboral {
+        ACTIVO
+        INACTIVO
+        SUSPENDIDO
+    }
+
+    enum TipoContrato {
+        TIEMPO_COMPLETO
+        MEDIO_TIEMPO
+        POR_HORAS
+        OCASIONAL
+        SERVICIOS_PROFESIONALES
+    }
+
+    enum EstadoProyecto {
+        PLANIFICACION
+        EN_EJECUCION
+        FINALIZADO
+        SUSPENDIDO
+        CANCELADO
+    }
+
+    enum EstadoAvance {
+        PENDIENTE
+        APROBADO
+        RECHAZADO
+    }
+
+    enum TipoAusencia {
+        VACACIONES
+        ENFERMEDAD
+        PERMISO_PERSONAL
+        MATERNIDAD_PATERNIDAD
+        OTRO
+    }
+
+    enum EstadoAusencia {
+        APROBADA
+        RECHAZADA
+        PENDIENTE
+        CANCELADA
+    }
+
+    enum EstadoAsistencia {
+        PUNTUAL
+        RETRASO
+        SALIDA_ANTICIPADA
+        AUSENTE
+        JUSTIFICADO
+        PRESENTE
+    }
+
+    enum TipoRegistro {
+        ENTRADA
+        SALIDA
+    }
+
+    enum TipoHuella {
+        INDICE_DERECHO
+        INDICE_IZQUIERDO
+        PULGAR_DERECHO
+        PULGAR_IZQUIERDO
+    }
+}
+
+' ===============================================
+' MÓDULO: ENTITY
+' ===============================================
+package "entity" <<entity>> {
+    class Usuario {
+        - Long id
+        - String codigo
+        - String nombre
+        - String correo
+        - String contrasena
+        - Personal personal
+        - TipoRol tipoRol
+        - Boolean estado
+
+        + getId(): Long
+        + getCodigo(): String
+        + getNombre(): String
+        + getCorreo(): String
+        + getContrasena(): String
+        + getPersonal(): Personal
+        + getTipoRol(): TipoRol
+        + getEstado(): Boolean
+        + setId(Long): void
+        + setCodigo(String): void
+        + setNombre(String): void
+        + setCorreo(String): void
+        + setContrasena(String): void
+        + setPersonal(Personal): void
+        + setTipoRol(TipoRol): void
+        + setEstado(Boolean): void
+    }
+
+    class Personal {
+        - String cedula
+        - String nombres
+        - String apellidos
+        - String email
+        - String telefono
+        - String direccion
+        - LocalDate fechaIngreso
+        - TipoContrato tipoContrato
+        - Boolean tieneContrato
+        - String departamento
+        - EstadoLaboral estadoLaboral
+        - Set<Contrato> contratos
+        - Set<AsignacionProyecto> asignaciones
+        - Set<DatoBiometrico> datosBiometricos
+        - Set<Usuario> usuarios
+        - Set<Asistencia> asistencias
+
+        + getCedula(): String
+        + getNombres(): String
+        + getApellidos(): String
+        + getEmail(): String
+        + getTelefono(): String
+        + getDireccion(): String
+        + getFechaIngreso(): LocalDate
+        + getTipoContrato(): TipoContrato
+        + getTieneContrato(): Boolean
+        + getDepartamento(): String
+        + getEstadoLaboral(): EstadoLaboral
+        + setCedula(String): void
+        + setNombres(String): void
+        + setApellidos(String): void
+        + setEmail(String): void
+        + setTelefono(String): void
+        + setDireccion(String): void
+        + setFechaIngreso(LocalDate): void
+        + setTipoContrato(TipoContrato): void
+        + setTieneContrato(Boolean): void
+        + setDepartamento(String): void
+        + setEstadoLaboral(EstadoLaboral): void
+    }
+
+    class Proyecto {
+        - Long id
+        - String nombre
+        - String codigoProyecto
+        - String descripcion
+        - LocalDate fechaInicio
+        - LocalDate fechaFinEstimada
+        - LocalDate fechaFinReal
+        - BigDecimal presupuesto
+        - String objetivos
+        - String cliente
+        - EstadoProyecto estadoProyecto
+        - byte[] documento
+        - String nombreDocumento
+        - Set<AsignacionProyecto> asignaciones
+        - Set<Avance> avances
+
+        + getId(): Long
+        + getNombre(): String
+        + getCodigoProyecto(): String
+        + getDescripcion(): String
+        + getFechaInicio(): LocalDate
+        + getFechaFinEstimada(): LocalDate
+        + getFechaFinReal(): LocalDate
+        + getPresupuesto(): BigDecimal
+        + getObjetivos(): String
+        + getCliente(): String
+        + getEstadoProyecto(): EstadoProyecto
+        + getDocumento(): byte[]
+        + getNombreDocumento(): String
+        + setId(Long): void
+        + setNombre(String): void
+        + setCodigoProyecto(String): void
+        + setDescripcion(String): void
+        + setFechaInicio(LocalDate): void
+        + setFechaFinEstimada(LocalDate): void
+        + setFechaFinReal(LocalDate): void
+        + setPresupuesto(BigDecimal): void
+        + setObjetivos(String): void
+        + setCliente(String): void
+        + setEstadoProyecto(EstadoProyecto): void
+        + setDocumento(byte[]): void
+        + setNombreDocumento(String): void
+        + cambiarEstado(EstadoProyecto): void
+    }
+
+    class Contrato {
+        - Personal personal
+        - byte[] archivoContrato
+        - LocalDate fechaInicio
+        - LocalDate fechaFin
+        - BigDecimal salario
+
+        + getPersonal(): Personal
+        + getArchivoContrato(): byte[]
+        + getFechaInicio(): LocalDate
+        + getFechaFin(): LocalDate
+        + getSalario(): BigDecimal
+        + setPersonal(Personal): void
+        + setArchivoContrato(byte[]): void
+        + setFechaInicio(LocalDate): void
+        + setFechaFin(LocalDate): void
+        + setSalario(BigDecimal): void
+        + esVigente(): boolean
+    }
+
+    class AsignacionProyecto {
+        - Proyecto proyecto
+        - Personal personal
+        - String rolEnProyecto
+        - LocalDate fechaAsignacion
+        - Integer horasDedicadas
+
+        + getProyecto(): Proyecto
+        + getPersonal(): Personal
+        + getRolEnProyecto(): String
+        + getFechaAsignacion(): LocalDate
+        + getHorasDedicadas(): Integer
+        + setProyecto(Proyecto): void
+        + setPersonal(Personal): void
+        + setRolEnProyecto(String): void
+        + setFechaAsignacion(LocalDate): void
+        + setHorasDedicadas(Integer): void
+    }
+
+    class Avance {
+        - Proyecto proyecto
+        - String semestre
+        - String descripcion
+        - LocalDateTime fechaReporte
+        - Integer porcentajeAvance
+        - EstadoAvance estado
+        - String observaciones
+        - LocalDateTime fechaRevision
+        - byte[] documentoPdf
+        - String nombreArchivo
+        - Usuario director
+        - Usuario jefatura
+
+        + getProyecto(): Proyecto
+        + getSemestre(): String
+        + getDescripcion(): String
+        + getFechaReporte(): LocalDateTime
+        + getPorcentajeAvance(): Integer
+        + getEstado(): EstadoAvance
+        + getObservaciones(): String
+        + getFechaRevision(): LocalDateTime
+        + getDocumentoPdf(): byte[]
+        + getNombreArchivo(): String
+        + getDirector(): Usuario
+        + getJefatura(): Usuario
+        + setProyecto(Proyecto): void
+        + setSemestre(String): void
+        + setDescripcion(String): void
+        + setFechaReporte(LocalDateTime): void
+        + setPorcentajeAvance(Integer): void
+        + setEstado(EstadoAvance): void
+        + setObservaciones(String): void
+        + setFechaRevision(LocalDateTime): void
+        + setDocumentoPdf(byte[]): void
+        + setNombreArchivo(String): void
+        + setDirector(Usuario): void
+        + setJefatura(Usuario): void
+    }
+
+    class Ausencia {
+        - Personal personal
+        - LocalDate fechaInicio
+        - LocalDate fechaFin
+        - TipoAusencia tipoAusencia
+        - EstadoAusencia estadoAusencia
+        - String motivo
+        - String documentoJustificativo
+        - String observacion
+        - Usuario aprobador
+        - LocalDateTime fechaAprobacion
+
+        + getPersonal(): Personal
+        + getFechaInicio(): LocalDate
+        + getFechaFin(): LocalDate
+        + getTipoAusencia(): TipoAusencia
+        + getEstadoAusencia(): EstadoAusencia
+        + getMotivo(): String
+        + getDocumentoJustificativo(): String
+        + getObservacion(): String
+        + getAprobador(): Usuario
+        + getFechaAprobacion(): LocalDateTime
+        + setPersonal(Personal): void
+        + setFechaInicio(LocalDate): void
+        + setFechaFin(LocalDate): void
+        + setTipoAusencia(TipoAusencia): void
+        + setEstadoAusencia(EstadoAusencia): void
+        + setMotivo(String): void
+        + setDocumentoJustificativo(String): void
+        + setObservacion(String): void
+        + setAprobador(Usuario): void
+        + setFechaAprobacion(LocalDateTime): void
+        + getDiasDuracion(): long
+        + aprobar(Usuario): void
+        + rechazar(Usuario, String): void
+    }
+
+    class Asistencia {
+        - Personal personal
+        - LocalDate fecha
+        - LocalTime horaEntrada
+        - LocalTime horaSalida
+        - TipoRegistro tipoRegistro
+        - EstadoAsistencia estadoAsistencia
+        - String comentarios
+
+        + getPersonal(): Personal
+        + getFecha(): LocalDate
+        + getHoraEntrada(): LocalTime
+        + getHoraSalida(): LocalTime
+        + getTipoRegistro(): TipoRegistro
+        + getEstadoAsistencia(): EstadoAsistencia
+        + getComentarios(): String
+        + setPersonal(Personal): void
+        + setFecha(LocalDate): void
+        + setHoraEntrada(LocalTime): void
+        + setHoraSalida(LocalTime): void
+        + setTipoRegistro(TipoRegistro): void
+        + setEstadoAsistencia(EstadoAsistencia): void
+        + setComentarios(String): void
+    }
+
+    class DatoBiometrico {
+        - Personal personal
+        - TipoHuella tipoHuella
+        - byte[] datosEncriptados
+        - Boolean activo
+        - LocalDateTime fechaRegistro
+
+        + getPersonal(): Personal
+        + getTipoHuella(): TipoHuella
+        + getDatosEncriptados(): byte[]
+        + getActivo(): Boolean
+        + getFechaRegistro(): LocalDateTime
+        + setPersonal(Personal): void
+        + setTipoHuella(TipoHuella): void
+        + setDatosEncriptados(byte[]): void
+        + setActivo(Boolean): void
+        + setFechaRegistro(LocalDateTime): void
+        + activar(): void
+        + desactivar(): void
+        + verificar(byte[]): boolean
+    }
+}
+
+' ===============================================
+' MÓDULO: DTO
+' ===============================================
+package "dto" <<dto>> {
+    class LoginRequest {
+        - String correo
+        - String contrasena
+
+        + getCorreo(): String
+        + getContrasena(): String
+        + setCorreo(String): void
+        + setContrasena(String): void
+    }
+
+    class LoginResponse {
+        - boolean autenticado
+        - String mensaje
+        - UsuarioDTO usuario
+
+        + isAutenticado(): boolean
+        + getMensaje(): String
+        + getUsuario(): UsuarioDTO
+        + setAutenticado(boolean): void
+        + setMensaje(String): void
+        + setUsuario(UsuarioDTO): void
+    }
+
+    class UsuarioDTO {
+        - Long id
+        - String codigo
+        - String nombre
+        - String correo
+        - TipoRol tipoRol
+
+        + getId(): Long
+        + getCodigo(): String
+        + getNombre(): String
+        + getCorreo(): String
+        + getTipoRol(): TipoRol
+        + setId(Long): void
+        + setCodigo(String): void
+        + setNombre(String): void
+        + setCorreo(String): void
+        + setTipoRol(TipoRol): void
+    }
+
+    class RegistroUsuarioRequest {
+        - String nombre
+        - String correo
+        - String contrasena
+        - TipoRol tipoRol
+
+        + getNombre(): String
+        + getCorreo(): String
+        + getContrasena(): String
+        + getTipoRol(): TipoRol
+        + setNombre(String): void
+        + setCorreo(String): void
+        + setContrasena(String): void
+        + setTipoRol(TipoRol): void
+    }
+
+    class PersonalRegistroDTO {
+        - String codigoInterno
+        - String nombres
+        - String apellidos
+        - String nui
+        - LocalDate fechaNacimiento
+        - String telefono
+        - EstadoLaboral estadoLaboral
+        - Long proyectoId
+        - String rolEnProyecto
+        - Integer porcentajeDedicacion
+
+        + getCodigoInterno(): String
+        + getNombres(): String
+        + getApellidos(): String
+        + getNui(): String
+        + getFechaNacimiento(): LocalDate
+        + getTelefono(): String
+        + getEstadoLaboral(): EstadoLaboral
+        + getProyectoId(): Long
+        + getRolEnProyecto(): String
+        + getPorcentajeDedicacion(): Integer
+        + setCodigoInterno(String): void
+        + setNombres(String): void
+        + setApellidos(String): void
+        + setNui(String): void
+        + setFechaNacimiento(LocalDate): void
+        + setTelefono(String): void
+        + setEstadoLaboral(EstadoLaboral): void
+        + setProyectoId(Long): void
+        + setRolEnProyecto(String): void
+        + setPorcentajeDedicacion(Integer): void
+    }
+
+    class AvanceRequest {
+        - Long proyectoId
+        - Long directorId
+        - String semestre
+        - String nombreArchivo
+        - byte[] contenidoPdf
+
+        + getProyectoId(): Long
+        + getDirectorId(): Long
+        + getSemestre(): String
+        + getNombreArchivo(): String
+        + getContenidoPdf(): byte[]
+        + setProyectoId(Long): void
+        + setDirectorId(Long): void
+        + setSemestre(String): void
+        + setNombreArchivo(String): void
+        + setContenidoPdf(byte[]): void
+    }
+
+    class AvanceResponse {
+        - Long id
+        - String semestre
+        - String nombreArchivo
+        - String estadoAvance
+        - LocalDateTime fechaCreacion
+        - LocalDateTime fechaRevision
+        - String observaciones
+        - Long proyectoId
+        - String proyectoNombre
+        - Long directorId
+        - String directorNombre
+        - Long jefaturaId
+        - String jefaturaNombre
+
+        + getId(): Long
+        + getSemestre(): String
+        + getNombreArchivo(): String
+        + getEstadoAvance(): String
+        + getFechaCreacion(): LocalDateTime
+        + getFechaRevision(): LocalDateTime
+        + getObservaciones(): String
+        + getProyectoId(): Long
+        + getProyectoNombre(): String
+        + getDirectorId(): Long
+        + getDirectorNombre(): String
+        + getJefaturaId(): Long
+        + getJefaturaNombre(): String
+        + setId(Long): void
+        + setSemestre(String): void
+        + setNombreArchivo(String): void
+        + setEstadoAvance(String): void
+        + setFechaCreacion(LocalDateTime): void
+        + setFechaRevision(LocalDateTime): void
+        + setObservaciones(String): void
+        + setProyectoId(Long): void
+        + setProyectoNombre(String): void
+        + setDirectorId(Long): void
+        + setDirectorNombre(String): void
+        + setJefaturaId(Long): void
+        + setJefaturaNombre(String): void
+    }
+
+    class RevisionAvanceRequest {
+        - Long jefaturaId
+        - String estado
+        - String observaciones
+
+        + getJefaturaId(): Long
+        + getEstado(): String
+        + getObservaciones(): String
+        + setJefaturaId(Long): void
+        + setEstado(String): void
+        + setObservaciones(String): void
+    }
+
+    class ContratoResumenDTO {
+        - Long id
+
+        + getId(): Long
+        + setId(Long): void
+    }
+}
+
+' ===============================================
+' MÓDULO: ROLE (Patrón Factory)
+' ===============================================
+package "role" <<role>> {
+    abstract class Rol {
+        + {abstract} getNombre(): String
+        + puedeGestionarUsuarios(): boolean
+        + puedeGestionarProyectos(): boolean
+        + puedeGestionarPersonal(): boolean
+        + puedeGestionarAusencias(): boolean
+        + puedeGestionarAsistencias(): boolean
+        + puedeGestionarContratos(): boolean
+        + puedeRevisarAusencias(): boolean
+        + puedeRevisarAsistencias(): boolean
+        + puedeCrearEditarProyecto(): boolean
+        + puedeLigarPersonalAProyecto(): boolean
+        + puedeVerInformacionContrato(): boolean
+        + puedeSubirContratoPdf(): boolean
+        + puedeRegistrarAsistenciaLaboratorio(): boolean
+        + puedeRegistrarAsistenciaQR(): boolean
+        + puedeRegistrarAusenciasAyudantes(): boolean
+        + puedeRegistrarAsistenciasPasantes(): boolean
+    }
+
+    class RolAdministrador {
+        + getNombre(): String
+        + puedeGestionarUsuarios(): boolean
+        + puedeGestionarProyectos(): boolean
+        + puedeGestionarPersonal(): boolean
+        + puedeGestionarAusencias(): boolean
+        + puedeGestionarAsistencias(): boolean
+        + puedeGestionarContratos(): boolean
+    }
+
+    class RolDirectorProyecto {
+        + getNombre(): String
+        + puedeCrearEditarProyecto(): boolean
+        + puedeLigarPersonalAProyecto(): boolean
+        + puedeVerInformacionContrato(): boolean
+        + puedeRegistrarAusenciasAyudantes(): boolean
+        + puedeRegistrarAsistenciasPasantes(): boolean
+    }
+
+    class RolJefatura {
+        + getNombre(): String
+        + puedeGestionarProyectos(): boolean
+        + puedeGestionarPersonal(): boolean
+        + puedeGestionarUsuarios(): boolean
+        + puedeRevisarAusencias(): boolean
+        + puedeRevisarAsistencias(): boolean
+        + puedeLigarPersonalAProyecto(): boolean
+    }
+
+    class RolPersonal {
+        + getNombre(): String
+        + puedeSubirContratoPdf(): boolean
+        + puedeRegistrarAsistenciaLaboratorio(): boolean
+        + puedeRegistrarAsistenciaQR(): boolean
+    }
+
+    class RolFactory {
+        + {static} getRol(TipoRol): Rol
+    }
+}
+
+' ===============================================
+' MÓDULO: REPOSITORY
+' ===============================================
+package "repository" <<repository>> {
+    interface UsuarioRepository {
+        + findByCorreo(String): Optional<Usuario>
+        + findByCodigoAndContrasena(String, String): Optional<Usuario>
+        + existsByCorreo(String): boolean
+    }
+
+    interface PersonalRepository {
+        + findByEmail(String): Optional<Personal>
+        + findByEstadoLaboral(EstadoLaboral): List<Personal>
+        + findByEstaActivo(Boolean): List<Personal>
+        + findActivosIncluyendoNull(): List<Personal>
+        + contarPorEstado(EstadoLaboral): Integer
+        + existsByEmail(String): boolean
+    }
+
+    interface ProyectoRepository {
+        + findByEstadoProyecto(EstadoProyecto): List<Proyecto>
+        + findByCodigoProyecto(String): Optional<Proyecto>
+        + findActivosIncluyendoNull(): List<Proyecto>
+    }
+
+    interface ContratoRepository {
+        + countByPersonalCedula(String): long
+        + findArchivoContratoById(Long): byte[]
+        + findIdsByPersonalCedulaOrderByIdDesc(String): List<Long>
+        + findByPersonalCedula(String): List<Contrato>
+        + findContratosVigentesPorPersonal(String, LocalDate): List<Contrato>
+    }
+
+    interface AsignacionProyectoRepository {
+        + findByProyectoId(Long): List<AsignacionProyecto>
+        + findByPersonalCedula(String): List<AsignacionProyecto>
+    }
+
+    interface AvanceRepository {
+        + findByProyectoId(Long): List<Avance>
+        + findByDirectorId(Long): List<Avance>
+        + findByJefaturaId(Long): List<Avance>
+    }
+
+    interface AusenciaRepository {
+        + findByPersonalCedula(String): List<Ausencia>
+        + findByEstadoAusencia(EstadoAusencia): List<Ausencia>
+        + findByTipoAusencia(TipoAusencia): List<Ausencia>
+        + findPendientes(): List<Ausencia>
+        + findByPersonalCedulaAndEstado(String, EstadoAusencia): List<Ausencia>
+    }
+
+    interface AsistenciaRepository {
+        + findByPersonalCedula(String): List<Asistencia>
+        + findByFecha(LocalDate): List<Asistencia>
+        + findByPersonalCedulaAndFecha(String, LocalDate): List<Asistencia>
+        + findByPersonalAndRangoFechas(String, LocalDate, LocalDate): List<Asistencia>
+        + findByEstadoAsistencia(EstadoAsistencia): List<Asistencia>
+    }
+
+    interface DatoBiometricoRepository {
+        + findByPersonalCedula(String): List<DatoBiometrico>
+        + findByPersonalCedulaAndTipoHuella(String, TipoHuella): Optional<DatoBiometrico>
+        + findActivos(): List<DatoBiometrico>
+    }
+}
+
+' ===============================================
+' MÓDULO: SERVICE (Interfaces)
+' ===============================================
+package "service.interfaces" <<service>> {
+    interface IUsuarioService {
+        + crearUsuario(Usuario, String): Usuario
+        + modificarUsuario(Long, Usuario): Usuario
+        + buscarPorId(Long): Usuario
+        + buscarPorCorreo(String): Usuario
+        + listarTodos(): List<Usuario>
+        + autenticar(LoginRequest): LoginResponse
+        + eliminar(Long): void
+    }
+
+    interface IPersonalService {
+        + registrarPersonal(Personal): Personal
+        + registrarPersonalConProyecto(PersonalRegistroDTO): Personal
+        + modificarPersonal(String, Personal): Personal
+        + cambiarEstado(String, EstadoLaboral): void
+        + buscarPorId(String): Personal
+        + buscarPorEstado(EstadoLaboral): List<Personal>
+        + listarTodos(): List<Personal>
+        + contabilizarPersonal(EstadoLaboral): Integer
+        + eliminarPersonal(String): void
+    }
+
+    interface IProyectoService {
+        + crearProyecto(Proyecto): Proyecto
+        + modificarProyecto(Long, Proyecto): Proyecto
+        + asignarPersonal(Long, String, String): void
+        + cambiarEstado(Long, EstadoProyecto): void
+        + buscarPorId(Long): Proyecto
+        + listarTodos(): List<Proyecto>
+        + buscarPorEstado(EstadoProyecto): List<Proyecto>
+        + eliminar(Long): void
+        + obtenerPersonalDeProyecto(Long): List<AsignacionProyecto>
+        + subirDocumento(Long, MultipartFile): void
+        + descargarDocumento(Long): byte[]
+        + obtenerProyectosActivos(): List<Proyecto>
+    }
+
+    interface IContratoService {
+        + crearContrato(String, Contrato, MultipartFile): Contrato
+        + modificarContrato(Long, Contrato): Contrato
+        + buscarPorId(Long): Contrato
+        + buscarPorPersonal(String): List<Contrato>
+        + cargarArchivo(Long, MultipartFile): void
+        + descargarArchivo(Long): byte[]
+        + listarTodos(): List<Contrato>
+        + buscarResumenPorPersonal(String): List<ContratoResumenDTO>
+        + obtenerUltimoIdPorPersonal(String): Long
+        + eliminarContrato(Long): void
+    }
+
+    interface IAvanceService {
+        + subirAvance(AvanceRequest): AvanceResponse
+        + revisarAvance(Long, RevisionAvanceRequest): Avance
+        + listarPorProyecto(Long): List<AvanceResponse>
+        + obtenerAvance(Long): Avance
+        + eliminarPdf(Long): void
+    }
+
+    interface IAusenciaService {
+        + registrarAusencia(String, Ausencia): Ausencia
+        + aprobarAusencia(Long, Long): Ausencia
+        + rechazarAusencia(Long, Long, String): Ausencia
+        + buscarPorId(Long): Ausencia
+        + listarTodas(): List<Ausencia>
+        + obtenerAusenciasPorPersonal(String): List<Ausencia>
+        + obtenerAusenciasPorEstado(EstadoAusencia): List<Ausencia>
+        + cancelarAusencia(Long): void
+    }
+
+    interface IAsistenciaService {
+        + registrarAsistencia(Asistencia): Asistencia
+        + buscarPorId(Long): Asistencia
+        + obtenerAsistenciasPorPersonal(String): List<Asistencia>
+        + obtenerAsistenciasPorFecha(String, LocalDate): List<Asistencia>
+        + listarTodas(): List<Asistencia>
+    }
+
+    interface IBiometriaService {
+        + registrarDatoBiometrico(String, byte[]): void
+        + activarBiometria(Long): void
+        + desactivarBiometria(Long): void
+        + verificarHuella(byte[]): Personal
+        + registrarAsistencia(String, TipoRegistro): Asistencia
+        + obtenerDatosBiometricosPorPersonal(String): List<DatoBiometrico>
+        + obtenerRegistrosAsistenciaPorPersonal(String): List<Asistencia>
+        + obtenerRegistrosAsistenciaPorFecha(String, LocalDate): List<Asistencia>
+    }
+}
+
+' ===============================================
+' MÓDULO: SERVICE (Implementaciones)
+' ===============================================
+package "service.impl" <<service>> {
+    class UsuarioService {
+        - UsuarioRepository usuarioRepository
+        - IPersonalService personalService
+
+        + crearUsuario(Usuario, String): Usuario
+        + modificarUsuario(Long, Usuario): Usuario
+        + buscarPorId(Long): Usuario
+        + buscarPorCorreo(String): Usuario
+        + listarTodos(): List<Usuario>
+        + autenticar(LoginRequest): LoginResponse
+        + eliminar(Long): void
+    }
+
+    class PersonalService {
+        - PersonalRepository personalRepository
+        - ProyectoRepository proyectoRepository
+        - AsignacionProyectoRepository asignacionRepository
+
+        + registrarPersonal(Personal): Personal
+        + registrarPersonalConProyecto(PersonalRegistroDTO): Personal
+        + modificarPersonal(String, Personal): Personal
+        + cambiarEstado(String, EstadoLaboral): void
+        + buscarPorId(String): Personal
+        + buscarPorEstado(EstadoLaboral): List<Personal>
+        + listarTodos(): List<Personal>
+        + contabilizarPersonal(EstadoLaboral): Integer
+        + eliminarPersonal(String): void
+    }
+
+    class ProyectoService {
+        - ProyectoRepository proyectoRepository
+        - AsignacionProyectoRepository asignacionRepository
+        - PersonalRepository personalRepository
+        - JdbcTemplate jdbcTemplate
+
+        + crearProyecto(Proyecto): Proyecto
+        + modificarProyecto(Long, Proyecto): Proyecto
+        + asignarPersonal(Long, String, String): void
+        + cambiarEstado(Long, EstadoProyecto): void
+        + buscarPorId(Long): Proyecto
+        + listarTodos(): List<Proyecto>
+        + buscarPorEstado(EstadoProyecto): List<Proyecto>
+        + eliminar(Long): void
+        + obtenerPersonalDeProyecto(Long): List<AsignacionProyecto>
+        + subirDocumento(Long, MultipartFile): void
+        + descargarDocumento(Long): byte[]
+        + obtenerProyectosActivos(): List<Proyecto>
+    }
+
+    class ContratoService {
+        - ContratoRepository contratoRepository
+        - IPersonalService personalService
+        - JdbcTemplate jdbcTemplate
+
+        + crearContrato(String, Contrato, MultipartFile): Contrato
+        + modificarContrato(Long, Contrato): Contrato
+        + buscarPorId(Long): Contrato
+        + buscarPorPersonal(String): List<Contrato>
+        + cargarArchivo(Long, MultipartFile): void
+        + descargarArchivo(Long): byte[]
+        + listarTodos(): List<Contrato>
+        + buscarResumenPorPersonal(String): List<ContratoResumenDTO>
+        + obtenerUltimoIdPorPersonal(String): Long
+        + eliminarContrato(Long): void
+    }
+
+    class AvanceService {
+        - AvanceRepository avanceRepository
+        - ProyectoRepository proyectoRepository
+        - UsuarioRepository usuarioRepository
+        - JdbcTemplate jdbcTemplate
+
+        + subirAvance(AvanceRequest): AvanceResponse
+        + revisarAvance(Long, RevisionAvanceRequest): Avance
+        + listarPorProyecto(Long): List<AvanceResponse>
+        + obtenerAvance(Long): Avance
+        + eliminarPdf(Long): void
+    }
+
+    class AusenciaService {
+        - AusenciaRepository ausenciaRepository
+        - IPersonalService personalService
+        - IUsuarioService usuarioService
+
+        + registrarAusencia(String, Ausencia): Ausencia
+        + aprobarAusencia(Long, Long): Ausencia
+        + rechazarAusencia(Long, Long, String): Ausencia
+        + buscarPorId(Long): Ausencia
+        + listarTodas(): List<Ausencia>
+        + obtenerAusenciasPorPersonal(String): List<Ausencia>
+        + obtenerAusenciasPorEstado(EstadoAusencia): List<Ausencia>
+        + cancelarAusencia(Long): void
+        - validarAusencia(Ausencia): void
+    }
+
+    class AsistenciaService {
+        - AsistenciaRepository asistenciaRepository
+
+        + registrarAsistencia(Asistencia): Asistencia
+        + buscarPorId(Long): Asistencia
+        + obtenerAsistenciasPorPersonal(String): List<Asistencia>
+        + obtenerAsistenciasPorFecha(String, LocalDate): List<Asistencia>
+        + listarTodas(): List<Asistencia>
+    }
+
+    class BiometriaService {
+        - DatoBiometricoRepository datoBiometricoRepository
+        - AsistenciaRepository asistenciaRepository
+        - IPersonalService personalService
+
+        + registrarDatoBiometrico(String, byte[]): void
+        + activarBiometria(Long): void
+        + desactivarBiometria(Long): void
+        + verificarHuella(byte[]): Personal
+        + registrarAsistencia(String, TipoRegistro): Asistencia
+        + obtenerDatosBiometricosPorPersonal(String): List<DatoBiometrico>
+        + obtenerRegistrosAsistenciaPorPersonal(String): List<Asistencia>
+        + obtenerRegistrosAsistenciaPorFecha(String, LocalDate): List<Asistencia>
+        - encriptarDatos(byte[]): byte[]
+    }
+}
+
+' ===============================================
+' MÓDULO: CONTROLLER
+' ===============================================
+package "controller" <<controller>> {
+    class UsuarioController {
+        - IUsuarioService usuarioService
+
+        + crearUsuario(Usuario, String): ResponseEntity<Usuario>
+        + modificarUsuario(Long, Usuario): ResponseEntity<Usuario>
+        + buscarPorId(Long): ResponseEntity<Usuario>
+        + buscarPorCorreo(String): ResponseEntity<Usuario>
+        + listarTodos(): ResponseEntity<List<Usuario>>
+        + autenticar(LoginRequest): ResponseEntity<LoginResponse>
+        + eliminar(Long): ResponseEntity<Void>
+    }
+
+    class PersonalController {
+        - IPersonalService personalService
+
+        + registrarPersonal(Personal): ResponseEntity<Personal>
+        + registrarPersonalConProyecto(PersonalRegistroDTO): ResponseEntity<Personal>
+        + modificarPersonal(String, Personal): ResponseEntity<Personal>
+        + cambiarEstado(String, EstadoLaboral): ResponseEntity<Void>
+        + buscarPorId(String): ResponseEntity<Personal>
+        + buscarPorNui(String): ResponseEntity<Personal>
+        + buscarPorEstado(EstadoLaboral): ResponseEntity<List<Personal>>
+        + listarTodos(): ResponseEntity<List<Personal>>
+        + contabilizarPersonal(EstadoLaboral): ResponseEntity<Integer>
+        + eliminarPersonal(String): ResponseEntity<Void>
+    }
+
+    class ProyectoController {
+        - IProyectoService proyectoService
+
+        + crearProyecto(Proyecto): ResponseEntity<Proyecto>
+        + modificarProyecto(Long, Proyecto): ResponseEntity<Proyecto>
+        + asignarPersonal(Long, String, String): ResponseEntity<Void>
+        + obtenerProyectosActivos(): ResponseEntity<List<Proyecto>>
+        + cambiarEstado(Long, EstadoProyecto): ResponseEntity<Void>
+        + buscarPorId(Long): ResponseEntity<Proyecto>
+        + listarTodos(): ResponseEntity<List<Proyecto>>
+        + buscarPorEstado(EstadoProyecto): ResponseEntity<List<Proyecto>>
+        + eliminar(Long): ResponseEntity<Void>
+        + obtenerPersonalDeProyecto(Long): ResponseEntity<List<AsignacionProyecto>>
+        + subirDocumento(Long, MultipartFile): ResponseEntity<Void>
+        + descargarDocumento(Long): ResponseEntity<Resource>
+    }
+
+    class ContratoController {
+        - IContratoService contratoService
+
+        + crearContrato(String, Contrato, MultipartFile): ResponseEntity<Contrato>
+        + modificarContrato(Long, Contrato): ResponseEntity<Contrato>
+        + buscarPorId(Long): ResponseEntity<Contrato>
+        + buscarPorPersonal(String): ResponseEntity<List<ContratoResumenDTO>>
+        + obtenerUltimoIdPorPersonal(String): ResponseEntity<Long>
+        + cargarArchivo(Long, MultipartFile): ResponseEntity<Void>
+        + descargarArchivo(Long): ResponseEntity<Resource>
+        + listarTodos(): ResponseEntity<List<Contrato>>
+        + eliminarContrato(Long): ResponseEntity<Void>
+    }
+
+    class AvanceController {
+        - IAvanceService avanceService
+
+        + subirAvance(Long, Long, String, MultipartFile): ResponseEntity<AvanceResponse>
+        + revisarAvance(Long, RevisionAvanceRequest): ResponseEntity<Avance>
+        + listarPorProyecto(Long): ResponseEntity<List<AvanceResponse>>
+        + descargarPdf(Long): ResponseEntity<byte[]>
+        + eliminarPdf(Long): ResponseEntity<Void>
+    }
+
+    class AusenciaController {
+        - IAusenciaService ausenciaService
+
+        + registrarAusencia(String, Ausencia): ResponseEntity<Ausencia>
+        + registrarAusenciaPorPersonal(String, Ausencia): ResponseEntity<Ausencia>
+        + aprobarAusencia(Long, Long): ResponseEntity<Ausencia>
+        + rechazarAusencia(Long, Long, String): ResponseEntity<Ausencia>
+        + buscarPorId(Long): ResponseEntity<Ausencia>
+        + listarTodas(): ResponseEntity<List<Ausencia>>
+        + obtenerAusenciasPorPersonal(String): ResponseEntity<List<Ausencia>>
+        + obtenerAusenciasPorEstado(EstadoAusencia): ResponseEntity<List<Ausencia>>
+        + cancelarAusencia(Long): ResponseEntity<Void>
+    }
+
+    class AsistenciaController {
+        - IAsistenciaService asistenciaService
+
+        + registrarAsistencia(String, TipoRegistro, EstadoAsistencia): ResponseEntity<Asistencia>
+        + buscarPorId(Long): ResponseEntity<Asistencia>
+        + obtenerAsistenciasPorPersonal(String): ResponseEntity<List<Asistencia>>
+        + obtenerAsistenciasPorFecha(String, LocalDate): ResponseEntity<List<Asistencia>>
+    }
+
+    class BiometriaController {
+        - IBiometriaService biometriaService
+
+        + registrarDatoBiometrico(String, byte[]): ResponseEntity<Void>
+        + activarBiometria(Long): ResponseEntity<Void>
+        + desactivarBiometria(Long): ResponseEntity<Void>
+        + verificarHuella(byte[]): ResponseEntity<Personal>
+        + registrarAsistencia(String, TipoRegistro): ResponseEntity<Asistencia>
+        + obtenerDatosBiometricos(String): ResponseEntity<List<DatoBiometrico>>
+        + obtenerRegistrosAsistencia(String): ResponseEntity<List<Asistencia>>
+        + obtenerRegistrosAsistenciaPorFecha(String, LocalDate): ResponseEntity<List<Asistencia>>
+    }
+}
+
+' ===============================================
+' MÓDULO: CONFIG
+' ===============================================
+package "config" <<config>> {
+    class SecurityConfig {
+        + securityFilterChain(HttpSecurity): SecurityFilterChain
+        + passwordEncoder(): PasswordEncoder
+        + corsConfigurationSource(): CorsConfigurationSource
+    }
+
+    class CorsConfig {
+        + corsConfigurer(): WebMvcConfigurer
+    }
+
+    class JpaConfig {
+    }
+
+    class LocalDateTimeConverter {
+        + convertToDatabaseColumn(LocalDateTime): String
+        + convertToEntityAttribute(String): LocalDateTime
+    }
+
+    class DataInitializer {
+        + initDatabase(): CommandLineRunner
+    }
+}
+
+' ===============================================
+' MÓDULO: EXCEPTION
+' ===============================================
+package "exception" <<exception>> {
+    class GlobalExceptionHandler {
+        + handleRuntimeException(RuntimeException): ResponseEntity<Map>
+        + handleMethodNotSupported(HttpRequestMethodNotSupportedException): ResponseEntity<Map>
+        + handleGeneralException(Exception): ResponseEntity<Map>
+    }
+}
+
+' ===============================================
+' RELACIONES DE HERENCIA
+' ===============================================
+Log <|-- Usuario
+Log <|-- Contrato
+Log <|-- AsignacionProyecto
+Log <|-- Avance
+Log <|-- Ausencia
+Log <|-- Asistencia
+Log <|-- DatoBiometrico
+Log <|-- Proyecto
+
+Rol <|-- RolAdministrador
+Rol <|-- RolDirectorProyecto
+Rol <|-- RolJefatura
+Rol <|-- RolPersonal
+
+' ===============================================
+' RELACIONES DE COMPOSICIÓN Y ASOCIACIÓN
+' ===============================================
+Usuario "1" *-- "1" Personal : personal
+Personal "1" *-- "0..*" Contrato : contratos
+Personal "1" *-- "0..*" AsignacionProyecto : asignaciones
+Personal "1" *-- "0..*" DatoBiometrico : datosBiometricos
+Personal "1" *-- "0..*" Asistencia : asistencias
+Personal "1" *-- "0..*" Ausencia : ausencias
+Proyecto "1" *-- "0..*" AsignacionProyecto : asignaciones
+Proyecto "1" *-- "0..*" Avance : avances
+Avance "1" o-- "1" Usuario : director
+Avance "1" o-- "0..1" Usuario : jefatura
+Ausencia "1" o-- "0..1" Usuario : aprobador
+
+AsignacionProyecto "0..*" -- "1" Proyecto : proyecto
+AsignacionProyecto "0..*" -- "1" Personal : personal
+
+LoginResponse +-- UsuarioDTO
+
+' ===============================================
+' RELACIONES DE IMPLEMENTACIÓN
+' ===============================================
+IUsuarioService <|.. UsuarioService
+IPersonalService <|.. PersonalService
+IProyectoService <|.. ProyectoService
+IContratoService <|.. ContratoService
+IAvanceService <|.. AvanceService
+IAusenciaService <|.. AusenciaService
+IAsistenciaService <|.. AsistenciaService
+IBiometriaService <|.. BiometriaService
+
+' ===============================================
+' RELACIONES CON ENUMS
+' ===============================================
+Usuario ..> TipoRol
+Personal ..> EstadoLaboral
+Personal ..> TipoContrato
+Proyecto ..> EstadoProyecto
+Avance ..> EstadoAvance
+Ausencia ..> TipoAusencia
+Ausencia ..> EstadoAusencia
+Asistencia ..> EstadoAsistencia
+Asistencia ..> TipoRegistro
+DatoBiometrico ..> TipoHuella
+UsuarioDTO ..> TipoRol
+PersonalRegistroDTO ..> EstadoLaboral
+
+' ===============================================
+' RELACIONES DE DEPENDENCIA (SERVICIOS -> REPOSITORIOS)
+' ===============================================
+UsuarioService --> UsuarioRepository
+UsuarioService --> IPersonalService
+PersonalService --> PersonalRepository
+PersonalService --> ProyectoRepository
+PersonalService --> AsignacionProyectoRepository
+ProyectoService --> ProyectoRepository
+ProyectoService --> AsignacionProyectoRepository
+ProyectoService --> PersonalRepository
+ContratoService --> ContratoRepository
+ContratoService --> IPersonalService
+AvanceService --> AvanceRepository
+AvanceService --> ProyectoRepository
+AvanceService --> UsuarioRepository
+AusenciaService --> AusenciaRepository
+AusenciaService --> IPersonalService
+AusenciaService --> IUsuarioService
+AsistenciaService --> AsistenciaRepository
+BiometriaService --> DatoBiometricoRepository
+BiometriaService --> AsistenciaRepository
+BiometriaService --> IPersonalService
+
+' ===============================================
+' RELACIONES DE DEPENDENCIA (CONTROLADORES -> SERVICIOS)
+' ===============================================
+UsuarioController --> IUsuarioService
+PersonalController --> IPersonalService
+ProyectoController --> IProyectoService
+ContratoController --> IContratoService
+AvanceController --> IAvanceService
+AusenciaController --> IAusenciaService
+AsistenciaController --> IAsistenciaService
+BiometriaController --> IBiometriaService
+
+' ===============================================
+' RELACIONES DE DEPENDENCIA (REPOSITORIOS)
+' ===============================================
+UsuarioRepository ..> Usuario
+PersonalRepository ..> Personal
+ProyectoRepository ..> Proyecto
+ContratoRepository ..> Contrato
+AsignacionProyectoRepository ..> AsignacionProyecto
+AvanceRepository ..> Avance
+AusenciaRepository ..> Ausencia
+AsistenciaRepository ..> Asistencia
+DatoBiometricoRepository ..> DatoBiometrico
+
+' ===============================================
+' RELACIONES CON FACTORY
+' ===============================================
+RolFactory ..> TipoRol
+RolFactory ..> Rol
+RolFactory ..> RolAdministrador
+RolFactory ..> RolDirectorProyecto
+RolFactory ..> RolJefatura
+RolFactory ..> RolPersonal
+
+@enduml

@@ -26,6 +26,14 @@ public class AusenciaService implements IAusenciaService {
     public Ausencia registrarAusencia(String cedula, Ausencia ausencia) {
         Personal personal = personalService.buscarPorId(cedula);
         ausencia.setPersonal(personal);
+        // Asegurarse de que el estado sea PENDIENTE si no se proporciona
+        if (ausencia.getEstadoAusencia() == null) {
+            ausencia.setEstadoAusencia(EstadoAusencia.PENDIENTE);
+        }
+        // Establecer estaActivo en true por defecto
+        if (ausencia.getEstaActivo() == null) {
+            ausencia.setEstaActivo(true);
+        }
         validarAusencia(ausencia);
         return ausenciaRepository.save(ausencia);
     }

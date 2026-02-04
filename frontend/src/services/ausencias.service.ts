@@ -8,7 +8,7 @@ export interface Ausencia {
     nombres: string;
     apellidos: string;
   };
-  tipoAusencia: 'PERMISO' | 'ENFERMEDAD' | 'VACACIONES' | 'OTRO';
+  tipoAusencia: 'PERMISO' | 'ENFERMEDAD' | 'VACACIONES' | 'MATERNIDAD' | 'OTRO';
   fechaInicio: string;
   fechaFin: string;
   motivo: string;
@@ -21,10 +21,24 @@ export interface Ausencia {
   motivoRechazo?: string;
 }
 
+// Mapeo de tipos de ausencia del frontend al backend
+const tipoAusenciaMap: Record<string, string> = {
+  'PERMISO': 'PERMISO_PERSONAL',
+  'VACACIONES': 'VACACIONES',
+  'ENFERMEDAD': 'ENFERMEDAD',
+  'MATERNIDAD': 'MATERNIDAD_PATERNIDAD',
+  'OTRO': 'OTRO'
+};
+
 export const ausenciasService = {
   // Notificar ausencia
   notificar: async (personalCedula: string, ausencia: Partial<Ausencia>): Promise<Ausencia> => {
-    const response = await apiClient.post(`/ausencias/${personalCedula}`, ausencia);
+    // Mapear el tipo de ausencia al formato del backend
+    const ausenciaPayload = {
+      ...ausencia,
+      tipoAusencia: tipoAusenciaMap[ausencia.tipoAusencia || 'OTRO']
+    };
+    const response = await apiClient.post(`/ausencias/personal/${personalCedula}`, ausenciaPayload);
     return response.data;
   },
 

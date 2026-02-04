@@ -36,7 +36,6 @@ public class AvanceService implements IAvanceService {
         Avance avance = Avance.builder()
                 .proyecto(proyecto)
                 .director(director)
-                .semestre(request.getSemestre())
                 .documentoPdf(request.getContenidoPdf())
                 .nombreArchivo(request.getNombreArchivo())
                 .estado(EstadoAvance.PENDIENTE)

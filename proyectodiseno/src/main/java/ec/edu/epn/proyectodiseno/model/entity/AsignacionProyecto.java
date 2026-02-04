@@ -30,18 +30,6 @@ public class AsignacionProyecto extends Log {
     @Column(name = "fecha_asignacion", nullable = false)
     private LocalDate fechaAsignacion;
 
-    @Column(name = "fecha_finalizacion")
-    private LocalDate fechaFinalizacion;
-
-    @Column(name = "porcentaje_dedicacion")
-    private Integer porcentajeDedicacion;
-
-    public boolean estaActiva() {
-        return fechaFinalizacion == null && estaActivo;
-    }
-
-    public void finalizar() {
-        this.fechaFinalizacion = LocalDate.now();
-        this.estaActivo = false;
-    }
+    @Column(name = "horas_dedicadas")
+    private Integer horasDedicadas;
 }

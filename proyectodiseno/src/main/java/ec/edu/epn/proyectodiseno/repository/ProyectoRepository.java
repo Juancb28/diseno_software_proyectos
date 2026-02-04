@@ -18,7 +18,7 @@ public interface ProyectoRepository extends JpaRepository<Proyecto, Long> {
     
     List<Proyecto> findByEstadoProyecto(EstadoProyecto estadoProyecto);
     
-    List<Proyecto> findByDirectorId(Long directorId);
+    List<Proyecto> findByDirectorCedula(String directorCedula);
     
     @Query("SELECT p FROM Proyecto p WHERE p.estadoProyecto = 'EN_PROGRESO' AND p.estaActivo = true")
     List<Proyecto> findActivos();

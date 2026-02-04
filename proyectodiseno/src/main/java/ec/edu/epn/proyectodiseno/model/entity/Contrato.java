@@ -6,10 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.Period;
-
 import ec.edu.epn.proyectodiseno.model.base.Log;
-import ec.edu.epn.proyectodiseno.model.enums.TipoContrato;
 
 @Entity
 @Table(name = "contratos")
@@ -20,8 +17,13 @@ import ec.edu.epn.proyectodiseno.model.enums.TipoContrato;
 @Builder
 public class Contrato extends Log {
 
-    @Column(name = "numero_contrato", unique = true, nullable = false, length = 50)
-    private String numeroContrato;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "personal_id", nullable = false)
+    private Personal personal;
+
+    @Lob
+    @Column(name = "archivo_contrato", columnDefinition = "BLOB")
+    private byte[] archivoContrato;
 
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDate fechaInicio;
@@ -32,46 +34,12 @@ public class Contrato extends Log {
     @Column(precision = 10, scale = 2)
     private BigDecimal salario;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_contrato", nullable = false)
-    private TipoContrato tipoContrato;
-
-    @Lob
-    @Column(name = "documento_pdf", columnDefinition = "BLOB")
-    private byte[] documentoPdf;
-
-    @Column(name = "nombre_archivo", length = 255)
-    private String nombreArchivo;
-
-    @Column(name = "tipo_archivo", length = 100)
-    private String tipoArchivo;
-
-    @Column(name = "tamano_archivo")
-    private Long tamanoArchivo;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "personal_id", nullable = false)
-    private Personal personal;
-
     public boolean esVigente() {
         LocalDate hoy = LocalDate.now();
         if (fechaFin == null) {
             return hoy.isAfter(fechaInicio) || hoy.isEqual(fechaInicio);
         }
-        return (hoy.isAfter(fechaInicio) || hoy.isEqual(fechaInicio)) &&
-               (hoy.isBefore(fechaFin) || hoy.isEqual(fechaFin));
-    }
-
-    public void renovar(LocalDate nuevaFechaInicio, LocalDate nuevaFechaFin) {
-        this.fechaInicio = nuevaFechaInicio;
-        this.fechaFin = nuevaFechaFin;
-    }
-
-    public Integer obtenerDuracionMeses() {
-        if (fechaFin == null) {
-            return null;
-        }
-        return Period.between(fechaInicio, fechaFin).getMonths() +
-               (Period.between(fechaInicio, fechaFin).getYears() * 12);
+        return (hoy.isAfter(fechaInicio) || hoy.isEqual(fechaInicio)) 
+            && (hoy.isBefore(fechaFin) || hoy.isEqual(fechaFin));
     }
 }

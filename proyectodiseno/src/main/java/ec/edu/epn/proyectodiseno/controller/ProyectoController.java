@@ -1,6 +1,5 @@
 package ec.edu.epn.proyectodiseno.controller;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +31,12 @@ public class ProyectoController {
         return ResponseEntity.ok(proyectoModificado);
     }
 
-    @PostMapping("/{proyectoId}/asignar/{personalId}")
+    @PostMapping("/{proyectoId}/asignar/{cedula}")
     public ResponseEntity<Void> asignarPersonal(
             @PathVariable Long proyectoId,
-            @PathVariable Long personalId,
+            @PathVariable String cedula,
             @RequestParam String rol) {
-        proyectoService.asignarPersonal(proyectoId, personalId, rol);
+        proyectoService.asignarPersonal(proyectoId, cedula, rol);
         return ResponseEntity.ok().build();
     }
 
@@ -53,15 +52,9 @@ public class ProyectoController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/{id:\\d+}")
+    @GetMapping("/{id}")
     public ResponseEntity<Proyecto> buscarPorId(@PathVariable Long id) {
         Proyecto proyecto = proyectoService.buscarPorId(id);
-        return ResponseEntity.ok(proyecto);
-    }
-
-    @GetMapping("/codigo/{codigo}")
-    public ResponseEntity<Proyecto> buscarPorCodigo(@PathVariable String codigo) {
-        Proyecto proyecto = proyectoService.buscarPorCodigo(codigo);
         return ResponseEntity.ok(proyecto);
     }
 

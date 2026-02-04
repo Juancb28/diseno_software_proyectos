@@ -1,5 +1,6 @@
 package ec.edu.epn.proyectodiseno.service;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
@@ -8,52 +9,17 @@ import ec.edu.epn.proyectodiseno.model.entity.Contrato;
 
 public interface IContratoService {
     
-    /**
-     * Registra un nuevo contrato con su documento PDF
-     * @param contrato Datos del contrato
-     * @param archivo Archivo PDF del contrato
-     * @return Contrato registrado
-     */
-    Contrato registrarContratoConDocumento(Contrato contrato, MultipartFile archivo);
+    Contrato crearContrato(String cedula, Contrato contrato, MultipartFile archivo) throws IOException;
     
-    /**
-     * Busca un contrato por su ID
-     * @param id ID del contrato
-     * @return Contrato encontrado
-     */
+    Contrato modificarContrato(Long id, Contrato contrato);
+    
     Contrato buscarPorId(Long id);
     
-    /**
-     * Lista todos los contratos de un personal específico
-     * @param personalId ID del personal
-     * @return Lista de contratos del personal
-     */
-    List<Contrato> listarPorPersonal(Long personalId);
+    List<Contrato> buscarPorPersonal(String cedula);
     
-    /**
-     * Lista todos los contratos vigentes de un personal
-     * @param personalId ID del personal
-     * @return Lista de contratos vigentes
-     */
-    List<Contrato> listarContratosVigentes(Long personalId);
+    void cargarArchivo(Long id, MultipartFile archivo) throws IOException;
     
-    /**
-     * Obtiene el documento PDF de un contrato
-     * @param id ID del contrato
-     * @return Bytes del documento PDF
-     */
-    byte[] obtenerDocumento(Long id);
+    byte[] descargarArchivo(Long id);
     
-    /**
-     * Elimina un contrato (eliminación lógica)
-     * @param id ID del contrato
-     * @param personalId ID del personal que intenta eliminar
-     */
-    void eliminar(Long id, Long personalId);
-    
-    /**
-     * Lista todos los contratos
-     * @return Lista de todos los contratos
-     */
     List<Contrato> listarTodos();
 }

@@ -12,6 +12,7 @@ public class RolFactory {
             case DIRECTOR_PROYECTO -> new RolDirectorProyecto();
             case JEFATURA -> new RolJefatura();
             case PERSONAL -> new RolPersonal();
+            default -> new RolPersonal();
         };
     }
 }

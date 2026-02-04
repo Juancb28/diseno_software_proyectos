@@ -3,18 +3,17 @@ package ec.edu.epn.proyectodiseno.service;
 import java.time.LocalDate;
 import java.util.List;
 
-import ec.edu.epn.proyectodiseno.model.entity.RegistroAsistencia;
-import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
+import ec.edu.epn.proyectodiseno.model.entity.Asistencia;
 
 public interface IAsistenciaService {
 
-    RegistroAsistencia registrarAsistencia(Long personalId, TipoRegistro tipoRegistro);
+    Asistencia registrarAsistencia(Asistencia asistencia);
 
-    RegistroAsistencia buscarPorId(Long id);
+    Asistencia buscarPorId(Long id);
 
-    List<RegistroAsistencia> obtenerAsistenciasPorPersonal(Long personalId);
+    List<Asistencia> obtenerAsistenciasPorPersonal(String cedula);
 
-    List<RegistroAsistencia> obtenerAsistenciasPorFecha(Long personalId, LocalDate fecha);
+    List<Asistencia> obtenerAsistenciasPorFecha(String cedula, LocalDate fecha);
 
-    List<RegistroAsistencia> listarTodas();
+    List<Asistencia> listarTodas();
 }

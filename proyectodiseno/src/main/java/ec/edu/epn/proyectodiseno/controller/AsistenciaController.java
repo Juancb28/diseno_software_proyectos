@@ -5,11 +5,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import ec.edu.epn.proyectodiseno.model.entity.RegistroAsistencia;
+import ec.edu.epn.proyectodiseno.model.entity.Asistencia;
+import ec.edu.epn.proyectodiseno.model.entity.Personal;
+import ec.edu.epn.proyectodiseno.model.enums.EstadoAsistencia;
 import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
 import ec.edu.epn.proyectodiseno.service.IAsistenciaService;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -20,37 +23,43 @@ public class AsistenciaController {
 
     private final IAsistenciaService asistenciaService;
 
-    @PostMapping("/{personalId}")
-    public ResponseEntity<RegistroAsistencia> registrarAsistencia(
-            @PathVariable Long personalId,
-            @RequestParam TipoRegistro tipoRegistro) {
-        RegistroAsistencia registro = asistenciaService.registrarAsistencia(personalId, tipoRegistro);
+    @PostMapping("/{cedula}")
+    public ResponseEntity<Asistencia> registrarAsistencia(
+            @PathVariable String cedula,
+            @RequestParam TipoRegistro tipoRegistro,
+            @RequestParam(defaultValue = "PUNTUAL") EstadoAsistencia estadoAsistencia) {
+        
+        Personal personal = Personal.builder().cedula(cedula).build();
+        
+        Asistencia asistencia = Asistencia.builder()
+                .personal(personal)
+                .fecha(LocalDate.now())
+                .horaEntrada(LocalTime.now())
+                .tipoRegistro(tipoRegistro)
+                .estadoAsistencia(estadoAsistencia)
+                .build();
+                
+        Asistencia registro = asistenciaService.registrarAsistencia(asistencia);
         return new ResponseEntity<>(registro, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id:\\d+}")
-    public ResponseEntity<RegistroAsistencia> buscarPorId(@PathVariable Long id) {
-        RegistroAsistencia registro = asistenciaService.buscarPorId(id);
+    public ResponseEntity<Asistencia> buscarPorId(@PathVariable Long id) {
+        Asistencia registro = asistenciaService.buscarPorId(id);
         return ResponseEntity.ok(registro);
     }
 
-    @GetMapping("/personal/{personalId}")
-    public ResponseEntity<List<RegistroAsistencia>> obtenerAsistenciasPorPersonal(@PathVariable Long personalId) {
-        List<RegistroAsistencia> registros = asistenciaService.obtenerAsistenciasPorPersonal(personalId);
+    @GetMapping("/personal/{cedula}")
+    public ResponseEntity<List<Asistencia>> obtenerAsistenciasPorPersonal(@PathVariable String cedula) {
+        List<Asistencia> registros = asistenciaService.obtenerAsistenciasPorPersonal(cedula);
         return ResponseEntity.ok(registros);
     }
 
-    @GetMapping("/personal/{personalId}/fecha")
-    public ResponseEntity<List<RegistroAsistencia>> obtenerAsistenciasPorFecha(
-            @PathVariable Long personalId,
+    @GetMapping("/personal/{cedula}/fecha")
+    public ResponseEntity<List<Asistencia>> obtenerAsistenciasPorFecha(
+            @PathVariable String cedula,
             @RequestParam LocalDate fecha) {
-        List<RegistroAsistencia> registros = asistenciaService.obtenerAsistenciasPorFecha(personalId, fecha);
-        return ResponseEntity.ok(registros);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<RegistroAsistencia>> listarTodas() {
-        List<RegistroAsistencia> registros = asistenciaService.listarTodas();
+        List<Asistencia> registros = asistenciaService.obtenerAsistenciasPorFecha(cedula, fecha);
         return ResponseEntity.ok(registros);
     }
 }

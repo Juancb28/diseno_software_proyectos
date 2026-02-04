@@ -16,6 +16,14 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
     // has tipoContrato.
     // Removed findByTipoContrato.
 
+    long countByPersonalCedula(String cedula);
+
+    @Query("SELECT c.archivoContrato FROM Contrato c WHERE c.id = :id")
+    byte[] findArchivoContratoById(@Param("id") Long id);
+
+        @Query("SELECT c.id FROM Contrato c WHERE c.personal.cedula = :cedula ORDER BY c.id DESC")
+        List<Long> findIdsByPersonalCedulaOrderByIdDesc(@Param("cedula") String cedula);
+
     @Query("SELECT c FROM Contrato c WHERE c.personal.cedula = :cedula")
     List<Contrato> findByPersonalCedula(@Param("cedula") String cedula);
 

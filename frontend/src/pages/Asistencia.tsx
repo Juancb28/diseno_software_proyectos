@@ -43,38 +43,7 @@ interface Asistencia {
   proyecto?: string;
 }
 
-const MOCK_ASISTENCIAS: Asistencia[] = [
-  {
-    id: 1,
-    empleado: 'Ana López',
-    fecha: '2026-02-03',
-    horaEntrada: '09:00',
-    horaSalida: '17:00',
-    tipo: 'LABORATORIO',
-    estado: 'PRESENTE',
-    proyecto: 'Sistema de Gestión Académica'
-  },
-  {
-    id: 2,
-    empleado: 'Pedro Martínez',
-    fecha: '2026-02-03',
-    horaEntrada: '09:15',
-    horaSalida: '17:10',
-    tipo: 'QR',
-    estado: 'TARDE',
-    proyecto: 'Sistema de Gestión Académica'
-  },
-  {
-    id: 3,
-    empleado: 'Ana López',
-    fecha: '2026-02-02',
-    horaEntrada: '08:55',
-    horaSalida: '17:05',
-    tipo: 'LABORATORIO',
-    estado: 'PRESENTE',
-    proyecto: 'Sistema de Gestión Académica'
-  },
-];
+const MOCK_ASISTENCIAS: Asistencia[] = [];
 
 export function Asistencia() {
   const { usuario } = useAuth();
@@ -84,17 +53,17 @@ export function Asistencia() {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const isAyudante = usuario?.rol === 'AYUDANTE';
-  const isDirector = usuario?.rol === 'DIRECTOR';
-  const isJefatura = usuario?.rol === 'JEFATURA';
-  const isAdmin = usuario?.rol === 'ADMIN';
+  const isAyudante = usuario?.tipoRol === 'EMPLEADO';
+  const isDirector = usuario?.tipoRol === 'DIRECTOR_PROYECTO';
+  const isJefatura = usuario?.tipoRol === 'JEFATURA';
+  const isAdmin = usuario?.tipoRol === 'ADMINISTRADOR';
   
   const filteredAsistencias = asistencias.filter(asistencia => {
     const matchesSearch = asistencia.empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asistencia.fecha.includes(searchTerm);
     
     if (isAyudante) {
-      return matchesSearch && asistencia.empleado === usuario?.nombre;
+      return matchesSearch && asistencia.empleado === usuario?.username;
     }
     
     if (isDirector) {

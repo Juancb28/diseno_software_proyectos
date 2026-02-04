@@ -64,6 +64,23 @@ public class UsuarioService implements IUsuarioService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Usuario autenticar(String username, String password) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        if (!usuario.getPassword().equals(password)) {
+            throw new RuntimeException("Contraseña incorrecta");
+        }
+        
+        if (usuario.getEstado() == null || !usuario.getEstado()) {
+            throw new RuntimeException("Usuario inactivo");
+        }
+        
+        return usuario;
+    }
+
+    @Override
     @Transactional
     public void eliminar(Long id) {
         Usuario usuario = buscarPorId(id);

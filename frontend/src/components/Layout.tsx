@@ -29,43 +29,37 @@ const menuItems: MenuItem[] = [
     title: 'Inicio',
     icon: <Home className="h-5 w-5" />,
     path: '/dashboard',
-    roles: ['ADMIN', 'JEFATURA', 'DIRECTOR', 'AYUDANTE']
+    roles: ['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO', 'EMPLEADO']
   },
   {
     title: 'Usuarios',
     icon: <Users className="h-5 w-5" />,
     path: '/usuarios',
-    roles: ['ADMIN', 'JEFATURA']
+    roles: ['ADMINISTRADOR', 'JEFATURA']
   },
   {
     title: 'Proyectos',
     icon: <FolderGit2 className="h-5 w-5" />,
     path: '/proyectos',
-    roles: ['ADMIN', 'JEFATURA', 'DIRECTOR']
+    roles: ['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']
   },
   {
     title: 'Personal',
     icon: <UserCog className="h-5 w-5" />,
     path: '/personal',
-    roles: ['ADMIN', 'JEFATURA', 'DIRECTOR']
+    roles: ['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']
   },
   {
     title: 'Ausencias',
     icon: <Calendar className="h-5 w-5" />,
     path: '/ausencias',
-    roles: ['ADMIN', 'JEFATURA', 'DIRECTOR']
+    roles: ['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']
   },
   {
     title: 'Asistencia',
     icon: <ClipboardCheck className="h-5 w-5" />,
     path: '/asistencia',
-    roles: ['ADMIN', 'JEFATURA', 'DIRECTOR', 'AYUDANTE']
-  },
-  {
-    title: 'Contratos',
-    icon: <FileText className="h-5 w-5" />,
-    path: '/contratos',
-    roles: ['ADMIN', 'AYUDANTE']
+    roles: ['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO', 'EMPLEADO']
   }
 ];
 
@@ -85,20 +79,20 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const filteredMenuItems = menuItems.filter(item =>
-    item.roles.includes(usuario?.rol as TipoRol)
+    item.roles.includes(usuario?.tipoRol as TipoRol)
   );
 
   const getRolLabel = (rol: TipoRol) => {
     const labels: Record<TipoRol, string> = {
-      ADMIN: 'Administrador',
+      ADMINISTRADOR: 'Administrador',
       JEFATURA: 'Jefatura',
-      DIRECTOR: 'Director de Proyecto',
-      AYUDANTE: 'Ayudante'
+      DIRECTOR_PROYECTO: 'Director de Proyecto',
+      EMPLEADO: 'Empleado'
     };
     return labels[rol];
   };
 
-  const showNotifications = ['JEFATURA', 'DIRECTOR', 'AYUDANTE'].includes(usuario?.rol || '');
+  const showNotifications = ['JEFATURA', 'DIRECTOR_PROYECTO', 'EMPLEADO'].includes(usuario?.tipoRol || '');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,8 +118,8 @@ export function Layout({ children }: LayoutProps) {
               </Button>
             </div>
             <div className="bg-indigo-50 p-3 rounded-lg">
-              <p className="text-sm font-medium text-gray-900">{usuario?.nombre}</p>
-              <p className="text-xs text-gray-600">{getRolLabel(usuario?.rol as TipoRol)}</p>
+              <p className="text-sm font-medium text-gray-900">{usuario?.username}</p>
+              <p className="text-xs text-gray-600">{getRolLabel(usuario?.tipoRol as TipoRol)}</p>
             </div>
           </div>
 

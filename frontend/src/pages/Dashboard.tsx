@@ -10,61 +10,114 @@ import {
   TrendingUp,
   AlertCircle
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { usuariosService } from '@/services/usuarios.service';
+import { personalService } from '@/services/personal.service';
+import { proyectosService } from '@/services/proyectos.service';
+import { ausenciasService } from '@/services/ausencias.service';
+
+interface Stats {
+  totalUsuarios: number;
+  totalPersonal: number;
+  proyectosActivos: number;
+  ausenciasPendientes: number;
+}
 
 export function Dashboard() {
   const { usuario } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Stats>({
+    totalUsuarios: 0,
+    totalPersonal: 0,
+    proyectosActivos: 0,
+    ausenciasPendientes: 0
+  });
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    try {
+      setLoading(true);
+      const [usuarios, personal, proyectos, ausencias] = await Promise.all([
+        usuariosService.listarTodos(),
+        personalService.listarTodos(),
+        proyectosService.listarTodos(),
+        ausenciasService.listarTodas()
+      ]);
+
+      const proyectosActivos = proyectos.filter(p => p.estadoProyecto === 'EN_EJECUCION').length;
+      const ausenciasPendientes = ausencias.filter(a => a.estado === 'PENDIENTE').length;
+
+      setStats({
+        totalUsuarios: usuarios.length,
+        totalPersonal: personal.length,
+        proyectosActivos,
+        ausenciasPendientes
+      });
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatsForRole = () => {
-    switch (usuario?.rol) {
-      case 'ADMIN':
+    switch (usuario?.tipoRol) {
+      case 'ADMINISTRADOR':
         return [
-          { title: 'Total Usuarios', value: '24', icon: Users, color: 'text-blue-600' },
-          { title: 'Proyectos Activos', value: '12', icon: FolderGit2, color: 'text-green-600' },
-          { title: 'Personal', value: '45', icon: UserCog, color: 'text-purple-600' },
-          { title: 'Ausencias Pendientes', value: '8', icon: Calendar, color: 'text-orange-600' }
+          { title: 'Total Usuarios', value: stats.totalUsuarios.toString(), icon: Users, color: 'text-blue-600' },
+          { title: 'Proyectos Activos', value: stats.proyectosActivos.toString(), icon: FolderGit2, color: 'text-green-600' },
+          { title: 'Personal', value: stats.totalPersonal.toString(), icon: UserCog, color: 'text-purple-600' },
+          { title: 'Ausencias Pendientes', value: stats.ausenciasPendientes.toString(), icon: Calendar, color: 'text-orange-600' }
         ];
       case 'JEFATURA':
         return [
-          { title: 'Proyectos', value: '12', icon: FolderGit2, color: 'text-green-600' },
-          { title: 'Personal', value: '45', icon: UserCog, color: 'text-purple-600' },
-          { title: 'Ausencias por Revisar', value: '5', icon: AlertCircle, color: 'text-orange-600' },
+          { title: 'Proyectos', value: stats.proyectosActivos.toString(), icon: FolderGit2, color: 'text-green-600' },
+          { title: 'Personal', value: stats.totalPersonal.toString(), icon: UserCog, color: 'text-purple-600' },
+          { title: 'Ausencias por Revisar', value: stats.ausenciasPendientes.toString(), icon: AlertCircle, color: 'text-orange-600' },
           { title: 'Asistencias del Mes', value: '89%', icon: TrendingUp, color: 'text-blue-600' }
         ];
-      case 'DIRECTOR':
+      case 'DIRECTOR_PROYECTO':
         return [
-          { title: 'Mi Proyecto', value: '1', icon: FolderGit2, color: 'text-green-600' },
-          { title: 'Ayudantes', value: '6', icon: UserCog, color: 'text-purple-600' },
-          { title: 'Ausencias Registradas', value: '3', icon: Calendar, color: 'text-orange-600' },
-          { title: 'Asistencia Promedio', value: '92%', icon: ClipboardCheck, color: 'text-blue-600' }
+          { title: 'Proyectos', value: stats.proyectosActivos.toString(), icon: FolderGit2, color: 'text-green-600' },
+          { title: 'Personal', value: stats.totalPersonal.toString(), icon: UserCog, color: 'text-purple-600' },
+          { title: 'Ausencias Registradas', value: stats.ausenciasPendientes.toString(), icon: Calendar, color: 'text-orange-600' },
+          { title: 'Total Usuarios', value: stats.totalUsuarios.toString(), icon: Users, color: 'text-blue-600' }
         ];
-      case 'AYUDANTE':
+      case 'EMPLEADO':
         return [
-          { title: 'Mi Asistencia', value: '95%', icon: ClipboardCheck, color: 'text-green-600' },
-          { title: 'Días Trabajados', value: '18', icon: TrendingUp, color: 'text-blue-600' },
-          { title: 'Ausencias', value: '1', icon: Calendar, color: 'text-orange-600' },
-          { title: 'Contrato', value: 'Activo', icon: FileText, color: 'text-purple-600' }
+          { title: 'Proyectos', value: stats.proyectosActivos.toString(), icon: FolderGit2, color: 'text-green-600' },
+          { title: 'Personal', value: stats.totalPersonal.toString(), icon: UserCog, color: 'text-blue-600' },
+          { title: 'Ausencias', value: stats.ausenciasPendientes.toString(), icon: Calendar, color: 'text-orange-600' },
+          { title: 'Total Usuarios', value: stats.totalUsuarios.toString(), icon: Users, color: 'text-purple-600' }
         ];
       default:
         return [];
     }
   };
 
-  const stats = getStatsForRole();
+  const statsCards = getStatsForRole();
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Cargando estadísticas...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
-          Bienvenido, {usuario?.nombre}
+          Bienvenido, {usuario?.username}
         </h1>
         <p className="text-gray-600 mt-1">
-          Panel de control - {usuario?.rol === 'ADMIN' ? 'Administrador' : usuario?.rol === 'JEFATURA' ? 'Jefatura' : usuario?.rol === 'DIRECTOR' ? 'Director de Proyecto' : 'Ayudante'}
+          Panel de control - {usuario?.tipoRol === 'ADMINISTRADOR' ? 'Administrador' : usuario?.tipoRol === 'JEFATURA' ? 'Jefatura' : usuario?.tipoRol === 'DIRECTOR_PROYECTO' ? 'Director de Proyecto' : 'Empleado'}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
@@ -110,12 +163,12 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {usuario?.rol === 'JEFATURA' && (
+              {usuario?.tipoRol === 'JEFATURA' && (
                 <>
                   <div className="flex gap-3 p-3 bg-orange-50 rounded-lg">
                     <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">5 ausencias pendientes de revisión</p>
+                      <p className="text-sm font-medium text-gray-900">{stats.ausenciasPendientes} ausencias pendientes de revisión</p>
                       <p className="text-xs text-gray-600">Requieren tu aprobación</p>
                     </div>
                   </div>
@@ -128,55 +181,55 @@ export function Dashboard() {
                   </div>
                 </>
               )}
-              {usuario?.rol === 'DIRECTOR' && (
+              {usuario?.tipoRol === 'DIRECTOR_PROYECTO' && (
                 <>
                   <div className="flex gap-3 p-3 bg-green-50 rounded-lg">
                     <FolderGit2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Proyecto actualizado correctamente</p>
-                      <p className="text-xs text-gray-600">Última actualización hace 1 hora</p>
+                      <p className="text-sm font-medium text-gray-900">{stats.proyectosActivos} proyectos activos</p>
+                      <p className="text-xs text-gray-600">En ejecución</p>
                     </div>
                   </div>
                   <div className="flex gap-3 p-3 bg-blue-50 rounded-lg">
                     <UserCog className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">6 ayudantes asignados</p>
-                      <p className="text-xs text-gray-600">Todos con contratos activos</p>
+                      <p className="text-sm font-medium text-gray-900">{stats.totalPersonal} personal registrado</p>
+                      <p className="text-xs text-gray-600">Total en el sistema</p>
                     </div>
                   </div>
                 </>
               )}
-              {usuario?.rol === 'AYUDANTE' && (
+              {usuario?.tipoRol === 'EMPLEADO' && (
                 <>
                   <div className="flex gap-3 p-3 bg-green-50 rounded-lg">
-                    <ClipboardCheck className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <FolderGit2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Asistencia registrada hoy</p>
-                      <p className="text-xs text-gray-600">Entrada: 09:00 AM</p>
+                      <p className="text-sm font-medium text-gray-900">{stats.proyectosActivos} proyectos en ejecución</p>
+                      <p className="text-xs text-gray-600">Activos en el sistema</p>
                     </div>
                   </div>
-                  <div className="flex gap-3 p-3 bg-purple-50 rounded-lg">
-                    <FileText className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex gap-3 p-3 bg-orange-50 rounded-lg">
+                    <Calendar className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Contrato vigente</p>
-                      <p className="text-xs text-gray-600">Válido hasta Diciembre 2026</p>
+                      <p className="text-sm font-medium text-gray-900">{stats.ausenciasPendientes} ausencias pendientes</p>
+                      <p className="text-xs text-gray-600">En revisión</p>
                     </div>
                   </div>
                 </>
               )}
-              {usuario?.rol === 'ADMIN' && (
+              {usuario?.tipoRol === 'ADMINISTRADOR' && (
                 <>
                   <div className="flex gap-3 p-3 bg-blue-50 rounded-lg">
                     <Users className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Sistema funcionando correctamente</p>
-                      <p className="text-xs text-gray-600">24 usuarios activos</p>
+                      <p className="text-xs text-gray-600">{stats.totalUsuarios} usuarios activos</p>
                     </div>
                   </div>
                   <div className="flex gap-3 p-3 bg-green-50 rounded-lg">
                     <FolderGit2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">12 proyectos en ejecución</p>
+                      <p className="text-sm font-medium text-gray-900">{stats.proyectosActivos} proyectos en ejecución</p>
                       <p className="text-xs text-gray-600">Todos con directores asignados</p>
                     </div>
                   </div>

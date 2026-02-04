@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
@@ -31,91 +31,104 @@ import {
 import { Badge } from '@/app/components/ui/badge';
 import { Plus, CheckCircle, XCircle, Search, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Ausencia {
-  id: number;
-  empleado: string;
-  tipo: 'PERMISO' | 'ENFERMEDAD' | 'VACACIONES' | 'OTRO';
-  fechaInicio: string;
-  fechaFin: string;
-  motivo: string;
-  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
-  proyecto?: string;
-}
-
-const MOCK_AUSENCIAS: Ausencia[] = [
-  {
-    id: 1,
-    empleado: 'Ana López',
-    tipo: 'ENFERMEDAD',
-    fechaInicio: '2026-02-05',
-    fechaFin: '2026-02-06',
-    motivo: 'Cita médica',
-    estado: 'PENDIENTE',
-    proyecto: 'Sistema de Gestión Académica'
-  },
-  {
-    id: 2,
-    empleado: 'Pedro Martínez',
-    tipo: 'PERMISO',
-    fechaInicio: '2026-02-10',
-    fechaFin: '2026-02-10',
-    motivo: 'Trámites personales',
-    estado: 'APROBADA',
-    proyecto: 'Sistema de Gestión Académica'
-  },
-  {
-    id: 3,
-    empleado: 'Laura Sánchez',
-    tipo: 'VACACIONES',
-    fechaInicio: '2026-02-15',
-    fechaFin: '2026-02-19',
-    motivo: 'Vacaciones programadas',
-    estado: 'PENDIENTE',
-    proyecto: 'Análisis de Datos IoT'
-  },
-];
+import { ausenciasService, Ausencia } from '@/services/ausencias.service';
+import { personalService } from '@/services/personal.service';
 
 export function Ausencias() {
   const { usuario } = useAuth();
-  const [ausencias, setAusencias] = useState<Ausencia[]>(MOCK_AUSENCIAS);
+  const [ausencias, setAusencias] = useState<Ausencia[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedAusencia, setSelectedAusencia] = useState<Ausencia | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [personal, setPersonal] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    personalCedula: '',
+    tipoAusencia: 'PERMISO' as Ausencia['tipoAusencia'],
+    fechaInicio: '',
+    fechaFin: '',
+    motivo: '',
+  });
 
-  const isJefatura = usuario?.rol === 'JEFATURA';
-  const isDirector = usuario?.rol === 'DIRECTOR';
-  const isAdmin = usuario?.rol === 'ADMIN';
+  const isJefatura = usuario?.tipoRol === 'JEFATURA';
+  const isDirector = usuario?.tipoRol === 'DIRECTOR_PROYECTO';
+  const isAdmin = usuario?.tipoRol === 'ADMINISTRADOR';
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      const [ausenciasData, personalData] = await Promise.all([
+        ausenciasService.listarTodas(),
+        personalService.listarTodos()
+      ]);
+      setAusencias(ausenciasData);
+      setPersonal(personalData);
+    } catch (error) {
+      toast.error('Error al cargar datos');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const filteredAusencias = ausencias.filter(ausencia => {
-    const matchesSearch = ausencia.empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const empleadoNombre = `${ausencia.personal.nombres} ${ausencia.personal.apellidos}`.toLowerCase();
+    const matchesSearch = empleadoNombre.includes(searchTerm.toLowerCase()) ||
       ausencia.motivo.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (isDirector) {
-      return matchesSearch && ausencia.proyecto === 'Sistema de Gestión Académica';
-    }
     
     return matchesSearch;
   });
 
-  const handleAprobar = (id: number) => {
-    setAusencias(ausencias.map(a => 
-      a.id === id ? { ...a, estado: 'APROBADA' as const } : a
-    ));
-    toast.success('Ausencia aprobada correctamente');
+  const handleAprobar = async (id: number) => {
+    try {
+      // Asumimos que el usuario actual es el aprobador
+      await ausenciasService.aprobar(id, usuario?.codigo || '');
+      toast.success('Ausencia aprobada correctamente');
+      cargarDatos();
+    } catch (error) {
+      toast.error('Error al aprobar ausencia');
+      console.error(error);
+    }
   };
 
-  const handleRechazar = (id: number) => {
-    setAusencias(ausencias.map(a => 
-      a.id === id ? { ...a, estado: 'RECHAZADA' as const } : a
-    ));
-    toast.error('Ausencia rechazada');
+  const handleRechazar = async (id: number, motivo: string = 'No aprobado') => {
+    try {
+      await ausenciasService.rechazar(id, usuario?.codigo || '', motivo);
+      toast.error('Ausencia rechazada');
+      cargarDatos();
+    } catch (error) {
+      toast.error('Error al rechazar ausencia');
+      console.error(error);
+    }
   };
 
-  const handleSave = () => {
-    toast.success('Ausencia registrada correctamente');
-    setDialogOpen(false);
+  const handleSave = async () => {
+    try {
+      await ausenciasService.notificar(formData.personalCedula, {
+        tipoAusencia: formData.tipoAusencia,
+        fechaInicio: formData.fechaInicio,
+        fechaFin: formData.fechaFin,
+        motivo: formData.motivo,
+      });
+      toast.success('Ausencia registrada correctamente');
+      setDialogOpen(false);
+      setFormData({
+        personalCedula: '',
+        tipoAusencia: 'PERMISO',
+        fechaInicio: '',
+        fechaFin: '',
+        motivo: '',
+      });
+      cargarDatos();
+    } catch (error) {
+      toast.error('Error al registrar ausencia');
+      console.error(error);
+    }
   };
 
   const viewDetails = (ausencia: Ausencia) => {

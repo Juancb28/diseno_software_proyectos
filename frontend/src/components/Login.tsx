@@ -65,7 +65,7 @@ export function Login() {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Ingrese su usuario"
+                  placeholder="admin"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="pl-10"

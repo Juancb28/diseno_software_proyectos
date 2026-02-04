@@ -22,4 +22,10 @@ public interface IContratoService {
     byte[] descargarArchivo(Long id);
     
     List<Contrato> listarTodos();
+
+    void eliminarContrato(Long id);
+
+    Long obtenerUltimoIdPorPersonal(String cedula);
+
+    java.util.List<ec.edu.epn.proyectodiseno.model.dto.ContratoResumenDTO> buscarResumenPorPersonal(String cedula);
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -32,91 +32,106 @@ import {
 import { Badge } from '@/app/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, Users as UsersIcon, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Proyecto {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  director: string;
-  estado: 'ACTIVO' | 'PAUSADO' | 'FINALIZADO';
-  fechaInicio: string;
-  ayudantes: number;
-}
-
-const MOCK_PROYECTOS: Proyecto[] = [
-  {
-    id: 1,
-    nombre: 'Sistema de Gestión Académica',
-    descripcion: 'Desarrollo de plataforma web para gestión académica',
-    director: 'Carlos Ramírez',
-    estado: 'ACTIVO',
-    fechaInicio: '2025-01-15',
-    ayudantes: 6
-  },
-  {
-    id: 2,
-    nombre: 'Análisis de Datos IoT',
-    descripcion: 'Investigación sobre procesamiento de datos de sensores',
-    director: 'María González',
-    estado: 'ACTIVO',
-    fechaInicio: '2025-02-01',
-    ayudantes: 4
-  },
-  {
-    id: 3,
-    nombre: 'IA para Clasificación de Imágenes',
-    descripcion: 'Implementación de modelos de deep learning',
-    director: 'Carlos Ramírez',
-    estado: 'PAUSADO',
-    fechaInicio: '2024-11-10',
-    ayudantes: 3
-  },
-];
+import { proyectosService, Proyecto } from '@/services/proyectos.service';
 
 export function Proyectos() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
-  const [proyectos, setProyectos] = useState<Proyecto[]>(MOCK_PROYECTOS);
+  const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Proyecto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    fechaInicio: '',
+    fechaFin: '',
+    estadoProyecto: 'PLANIFICACION' as Proyecto['estadoProyecto'],
+  });
 
-  const isDirector = usuario?.rol === 'DIRECTOR';
+  const isDirector = usuario?.tipoRol === 'DIRECTOR_PROYECTO';
+
+  useEffect(() => {
+    cargarProyectos();
+  }, []);
+
+  const cargarProyectos = async () => {
+    try {
+      setLoading(true);
+      const data = await proyectosService.listarTodos();
+      setProyectos(data);
+    } catch (error) {
+      toast.error('Error al cargar proyectos');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const filteredProyectos = proyectos.filter(proyecto => {
     const matchesSearch = proyecto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proyecto.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proyecto.director.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Si es director, solo mostrar sus proyectos
-    if (isDirector) {
-      return matchesSearch && proyecto.director === usuario?.nombre;
-    }
+      (proyecto.descripcion?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (proyecto.director ? `${proyecto.director.nombres} ${proyecto.director.apellidos}`.toLowerCase().includes(searchTerm.toLowerCase()) : false);
     
     return matchesSearch;
   });
 
-  const handleDelete = (id: number) => {
-    setProyectos(proyectos.filter(p => p.id !== id));
-    toast.success('Proyecto eliminado correctamente');
+  const handleDelete = async (id: number) => {
+    try {
+      await proyectosService.eliminar(id);
+      toast.success('Proyecto eliminado correctamente');
+      cargarProyectos();
+    } catch (error) {
+      toast.error('Error al eliminar proyecto');
+      console.error(error);
+    }
   };
 
   const handleEdit = (proyecto: Proyecto) => {
     setEditingProject(proyecto);
+    setFormData({
+      nombre: proyecto.nombre,
+      descripcion: proyecto.descripcion || '',
+      fechaInicio: proyecto.fechaInicio || '',
+      fechaFin: proyecto.fechaFin || '',
+      estadoProyecto: proyecto.estadoProyecto,
+    });
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    toast.success(editingProject ? 'Proyecto actualizado' : 'Proyecto creado');
-    setDialogOpen(false);
-    setEditingProject(null);
+  const handleSave = async () => {
+    try {
+      if (editingProject) {
+        await proyectosService.modificar(editingProject.id!, formData);
+        toast.success('Proyecto actualizado');
+      } else {
+        await proyectosService.crear(formData);
+        toast.success('Proyecto creado');
+      }
+      setDialogOpen(false);
+      setEditingProject(null);
+      setFormData({
+        nombre: '',
+        descripcion: '',
+        fechaInicio: '',
+        fechaFin: '',
+        estadoProyecto: 'PLANIFICACION',
+      });
+      cargarProyectos();
+    } catch (error) {
+      toast.error('Error al guardar proyecto');
+      console.error(error);
+    }
   };
 
   const getEstadoBadge = (estado: string) => {
     const colors: Record<string, string> = {
-      ACTIVO: 'bg-green-100 text-green-800',
-      PAUSADO: 'bg-yellow-100 text-yellow-800',
-      FINALIZADO: 'bg-gray-100 text-gray-800'
+      PLANIFICACION: 'bg-blue-100 text-blue-800',
+      EN_EJECUCION: 'bg-green-100 text-green-800',
+      SUSPENDIDO: 'bg-yellow-100 text-yellow-800',
+      FINALIZADO: 'bg-gray-100 text-gray-800',
+      CANCELADO: 'bg-red-100 text-red-800'
     };
     return colors[estado] || 'bg-gray-100 text-gray-800';
   };
@@ -124,6 +139,10 @@ export function Proyectos() {
   const handleViewDetails = (id: number) => {
     navigate(`/proyectos/${id}`);
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-96">Cargando...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -136,10 +155,19 @@ export function Proyectos() {
             {isDirector ? 'Administra tus proyectos de investigación' : 'Administra los proyectos del sistema'}
           </p>
         </div>
-        {(usuario?.rol === 'ADMIN' || usuario?.rol === 'DIRECTOR') && (
+        {(usuario?.tipoRol === 'ADMINISTRADOR' || usuario?.tipoRol === 'JEFATURA' || usuario?.tipoRol === 'DIRECTOR_PROYECTO') && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingProject(null)}>
+              <Button onClick={() => {
+                setEditingProject(null);
+                setFormData({
+                  nombre: '',
+                  descripcion: '',
+                  fechaInicio: '',
+                  fechaFin: '',
+                  estadoProyecto: 'PLANIFICACION',
+                });
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Proyecto
               </Button>
@@ -154,7 +182,12 @@ export function Proyectos() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="nombre">Nombre del Proyecto</Label>
-                  <Input id="nombre" placeholder="Sistema de Gestión..." />
+                  <Input 
+                    id="nombre" 
+                    placeholder="Sistema de Gestión..."
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="descripcion">Descripción</Label>
@@ -162,39 +195,38 @@ export function Proyectos() {
                     id="descripcion"
                     placeholder="Descripción detallada del proyecto"
                     rows={3}
+                    value={formData.descripcion}
+                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="director">Director</Label>
-                    <Select defaultValue="1">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Carlos Ramírez</SelectItem>
-                        <SelectItem value="2">María González</SelectItem>
-                        <SelectItem value="3">Juan Pérez</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="fechaInicio">Fecha de Inicio</Label>
+                    <Input 
+                      id="fechaInicio" 
+                      type="date"
+                      value={formData.fechaInicio}
+                      onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="estado">Estado</Label>
-                    <Select defaultValue="ACTIVO">
+                    <Select 
+                      value={formData.estadoProyecto}
+                      onValueChange={(value) => setFormData({ ...formData, estadoProyecto: value as Proyecto['estadoProyecto'] })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ACTIVO">Activo</SelectItem>
-                        <SelectItem value="PAUSADO">Pausado</SelectItem>
+                        <SelectItem value="PLANIFICACION">Planificación</SelectItem>
+                        <SelectItem value="EN_EJECUCION">En Ejecución</SelectItem>
+                        <SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
                         <SelectItem value="FINALIZADO">Finalizado</SelectItem>
+                        <SelectItem value="CANCELADO">Cancelado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fechaInicio">Fecha de Inicio</Label>
-                  <Input id="fechaInicio" type="date" />
                 </div>
                 <Button onClick={handleSave} className="w-full">
                   {editingProject ? 'Actualizar' : 'Crear'} Proyecto
@@ -239,17 +271,19 @@ export function Proyectos() {
                 <TableRow key={proyecto.id}>
                   <TableCell className="font-medium">{proyecto.nombre}</TableCell>
                   <TableCell className="max-w-xs truncate">{proyecto.descripcion}</TableCell>
-                  <TableCell>{proyecto.director}</TableCell>
                   <TableCell>
-                    <Badge className={getEstadoBadge(proyecto.estado)}>
-                      {proyecto.estado}
+                    {proyecto.director ? `${proyecto.director.nombres} ${proyecto.director.apellidos}` : 'Sin asignar'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getEstadoBadge(proyecto.estadoProyecto)}>
+                      {proyecto.estadoProyecto.replace('_', ' ')}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(proyecto.fechaInicio).toLocaleDateString('es-ES')}</TableCell>
+                  <TableCell>{proyecto.fechaInicio ? new Date(proyecto.fechaInicio).toLocaleDateString('es-ES') : 'N/A'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <UsersIcon className="h-4 w-4 text-gray-400" />
-                      {proyecto.ayudantes}
+                      -
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -257,7 +291,7 @@ export function Proyectos() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleViewDetails(proyecto.id)}
+                        onClick={() => handleViewDetails(proyecto.id!)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -272,7 +306,7 @@ export function Proyectos() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(proyecto.id)}
+                          onClick={() => handleDelete(proyecto.id!)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />

@@ -1,6 +1,7 @@
 package ec.edu.epn.proyectodiseno.model.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,6 +23,7 @@ public class Contrato extends Log {
     private Personal personal;
 
     @Lob
+    @JsonIgnore
     @Column(name = "archivo_contrato", columnDefinition = "BLOB")
     private byte[] archivoContrato;
 

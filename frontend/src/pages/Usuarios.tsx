@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
@@ -29,60 +29,101 @@ import {
 import { Badge } from '@/app/components/ui/badge';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Usuario {
-  id: number;
-  username: string;
-  nombre: string;
-  email: string;
-  rol: string;
-  estado: 'ACTIVO' | 'INACTIVO';
-}
-
-const MOCK_USUARIOS: Usuario[] = [
-  { id: 1, username: 'admin', nombre: 'Juan Pérez', email: 'juan@epn.edu.ec', rol: 'ADMIN', estado: 'ACTIVO' },
-  { id: 2, username: 'jefatura', nombre: 'María González', email: 'maria@epn.edu.ec', rol: 'JEFATURA', estado: 'ACTIVO' },
-  { id: 3, username: 'director', nombre: 'Carlos Ramírez', email: 'carlos@epn.edu.ec', rol: 'DIRECTOR', estado: 'ACTIVO' },
-  { id: 4, username: 'ayudante', nombre: 'Ana López', email: 'ana@epn.edu.ec', rol: 'AYUDANTE', estado: 'ACTIVO' },
-];
+import { usuariosService, Usuario } from '@/services/usuarios.service';
 
 export function Usuarios() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(MOCK_USUARIOS);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    tipoRol: 'EMPLEADO' as Usuario['tipoRol'],
+    estado: true,
+  });
+
+  useEffect(() => {
+    cargarUsuarios();
+  }, []);
+
+  const cargarUsuarios = async () => {
+    try {
+      setLoading(true);
+      const data = await usuariosService.listarTodos();
+      setUsuarios(data);
+    } catch (error) {
+      toast.error('Error al cargar usuarios');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredUsuarios = usuarios.filter(usuario =>
-    usuario.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.email.toLowerCase().includes(searchTerm.toLowerCase())
+    usuario.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (id: number) => {
-    setUsuarios(usuarios.filter(u => u.id !== id));
-    toast.success('Usuario eliminado correctamente');
+  const handleDelete = async (id: number) => {
+    try {
+      await usuariosService.eliminar(id);
+      toast.success('Usuario eliminado correctamente');
+      cargarUsuarios();
+    } catch (error) {
+      toast.error('Error al eliminar usuario');
+      console.error(error);
+    }
   };
 
   const handleEdit = (usuario: Usuario) => {
     setEditingUser(usuario);
+    setFormData({
+      username: usuario.username,
+      password: '',
+      tipoRol: usuario.tipoRol,
+      estado: usuario.estado,
+    });
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
-    toast.success(editingUser ? 'Usuario actualizado' : 'Usuario creado');
-    setDialogOpen(false);
-    setEditingUser(null);
+  const handleSave = async () => {
+    try {
+      if (editingUser) {
+        await usuariosService.modificar(editingUser.id, formData);
+        toast.success('Usuario actualizado');
+      } else {
+        await usuariosService.registrar(formData);
+        toast.success('Usuario creado');
+      }
+      setDialogOpen(false);
+      setEditingUser(null);
+      setFormData({
+        username: '',
+        password: '',
+        tipoRol: 'EMPLEADO',
+        estado: true,
+      });
+      cargarUsuarios();
+    } catch (error) {
+      toast.error('Error al guardar usuario');
+      console.error(error);
+    }
   };
 
   const getRolBadge = (rol: string) => {
     const colors: Record<string, string> = {
-      ADMIN: 'bg-red-100 text-red-800',
+      ADMINISTRADOR: 'bg-red-100 text-red-800',
       JEFATURA: 'bg-blue-100 text-blue-800',
-      DIRECTOR: 'bg-green-100 text-green-800',
-      AYUDANTE: 'bg-purple-100 text-purple-800'
+      DIRECTOR_PROYECTO: 'bg-green-100 text-green-800',
+      EMPLEADO: 'bg-purple-100 text-purple-800'
     };
     return colors[rol] || 'bg-gray-100 text-gray-800';
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-96">Cargando...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -93,7 +134,15 @@ export function Usuarios() {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingUser(null)}>
+            <Button onClick={() => {
+              setEditingUser(null);
+              setFormData({
+                username: '',
+                password: '',
+                tipoRol: 'EMPLEADO',
+                estado: true,
+              });
+            }}>
               <Plus className="h-4 w-4 mr-2" />
               Nuevo Usuario
             </Button>
@@ -107,34 +156,40 @@ export function Usuarios() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre Completo</Label>
-                <Input id="nombre" placeholder="Juan Pérez" />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="username">Usuario</Label>
-                <Input id="username" placeholder="jperez" />
+                <Input 
+                  id="username" 
+                  placeholder="admin"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="juan@epn.edu.ec" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rol">Rol</Label>
-                <Select defaultValue="AYUDANTE">
+                <Label htmlFor="tipoRol">Rol</Label>
+                <Select 
+                  value={formData.tipoRol}
+                  onValueChange={(value) => setFormData({ ...formData, tipoRol: value as Usuario['tipoRol'] })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
+                    <SelectItem value="ADMINISTRADOR">Administrador</SelectItem>
                     <SelectItem value="JEFATURA">Jefatura</SelectItem>
-                    <SelectItem value="DIRECTOR">Director</SelectItem>
-                    <SelectItem value="AYUDANTE">Ayudante</SelectItem>
+                    <SelectItem value="DIRECTOR_PROYECTO">Director de Proyecto</SelectItem>
+                    <SelectItem value="EMPLEADO">Empleado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" type="password" placeholder="••••••••" />
+                <Label htmlFor="password">Contraseña{editingUser && ' (dejar en blanco para no cambiar)'}</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
               </div>
               <Button onClick={handleSave} className="w-full">
                 {editingUser ? 'Actualizar' : 'Crear'} Usuario
@@ -153,7 +208,7 @@ export function Usuarios() {
           <div className="relative mt-4">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por nombre, usuario o email..."
+              placeholder="Buscar por nombre, código o email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -165,8 +220,6 @@ export function Usuarios() {
             <TableHeader>
               <TableRow>
                 <TableHead>Usuario</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -176,16 +229,16 @@ export function Usuarios() {
               {filteredUsuarios.map((usuario) => (
                 <TableRow key={usuario.id}>
                   <TableCell className="font-medium">{usuario.username}</TableCell>
-                  <TableCell>{usuario.nombre}</TableCell>
-                  <TableCell>{usuario.email}</TableCell>
                   <TableCell>
-                    <Badge className={getRolBadge(usuario.rol)}>
-                      {usuario.rol}
+                    <Badge className={getRolBadge(usuario.tipoRol)}>
+                      {usuario.tipoRol === 'ADMINISTRADOR' ? 'Administrador' : 
+                       usuario.tipoRol === 'JEFATURA' ? 'Jefatura' :
+                       usuario.tipoRol === 'DIRECTOR_PROYECTO' ? 'Director' : 'Empleado'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={usuario.estado === 'ACTIVO' ? 'default' : 'secondary'}>
-                      {usuario.estado}
+                    <Badge variant={usuario.estado ? 'default' : 'secondary'}>
+                      {usuario.estado ? 'ACTIVO' : 'INACTIVO'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

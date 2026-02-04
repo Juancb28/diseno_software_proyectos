@@ -96,7 +96,28 @@ public class ProyectoService implements IProyectoService {
     @Transactional
     public void eliminar(Long id) {
         Proyecto proyecto = buscarPorId(id);
-        proyecto.setActivo(false);
+        proyecto.setEstaActivo(false);
         proyectoRepository.save(proyecto);
     }
-}
+    @Override
+    @Transactional(readOnly = true)
+    public List<AsignacionProyecto> obtenerPersonalDeProyecto(Long proyectoId) {
+        buscarPorId(proyectoId); // Verificar que el proyecto existe
+        return asignacionProyectoRepository.findByProyectoId(proyectoId);
+    }
+
+    @Override
+    @Transactional
+    public void subirDocumento(Long proyectoId, org.springframework.web.multipart.MultipartFile archivo) throws java.io.IOException {
+        Proyecto proyecto = buscarPorId(proyectoId);
+        proyecto.setDocumento(archivo.getBytes());
+        proyecto.setNombreDocumento(archivo.getOriginalFilename());
+        proyectoRepository.save(proyecto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] descargarDocumento(Long proyectoId) {
+        Proyecto proyecto = buscarPorId(proyectoId);
+        return proyecto.getDocumento();
+    }}

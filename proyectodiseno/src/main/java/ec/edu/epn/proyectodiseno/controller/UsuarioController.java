@@ -48,6 +48,12 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
+    @PostMapping("/autenticar")
+    public ResponseEntity<Usuario> autenticar(@RequestBody Usuario credenciales) {
+        Usuario usuario = usuarioService.autenticar(credenciales.getUsername(), credenciales.getPassword());
+        return ResponseEntity.ok(usuario);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         usuarioService.eliminar(id);

@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { usuariosService, Usuario as UsuarioAPI } from '@/services/usuarios.service';
 
-export type TipoRol = 'ADMIN' | 'JEFATURA' | 'DIRECTOR' | 'AYUDANTE';
+export type TipoRol = 'ADMINISTRADOR' | 'JEFATURA' | 'DIRECTOR_PROYECTO' | 'EMPLEADO';
 
 export interface Usuario {
   id: number;
   username: string;
-  nombre: string;
-  rol: TipoRol;
-  proyectoId?: number;
+  tipoRol: TipoRol;
+  estado: boolean;
+  estaActivo: boolean;
 }
 
 interface AuthContextType {
@@ -19,58 +20,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock de usuarios para desarrollo
-const MOCK_USUARIOS: Array<Usuario & { password: string }> = [
-  {
-    id: 1,
-    username: 'admin',
-    password: 'admin123',
-    nombre: 'Juan Pérez',
-    rol: 'ADMIN'
-  },
-  {
-    id: 2,
-    username: 'jefatura',
-    password: 'jefe123',
-    nombre: 'María González',
-    rol: 'JEFATURA'
-  },
-  {
-    id: 3,
-    username: 'director',
-    password: 'dir123',
-    nombre: 'Carlos Ramírez',
-    rol: 'DIRECTOR',
-    proyectoId: 1
-  },
-  {
-    id: 4,
-    username: 'ayudante',
-    password: 'ayu123',
-    nombre: 'Ana López',
-    rol: 'AYUDANTE'
-  }
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Simular llamada al backend
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const user = MOCK_USUARIOS.find(
-      u => u.username === username && u.password === password
-    );
-    
-    if (user) {
-      const { password: _, ...usuarioSinPassword } = user;
-      setUsuario(usuarioSinPassword);
-      localStorage.setItem('usuario', JSON.stringify(usuarioSinPassword));
-      return true;
+    try {
+      const response = await usuariosService.autenticar({ username, password });
+      
+      if (response.autenticado && response.usuario) {
+        const usuarioData: Usuario = {
+          id: response.usuario.id,
+          username: response.usuario.username,
+          tipoRol: response.usuario.tipoRol,
+          estado: response.usuario.estado,
+          estaActivo: response.usuario.estaActivo
+        };
+        setUsuario(usuarioData);
+        localStorage.setItem('usuario', JSON.stringify(usuarioData));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error en login:', error);
+      return false;
     }
-    
-    return false;
   };
 
   const logout = () => {

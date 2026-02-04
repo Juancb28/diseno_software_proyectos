@@ -75,4 +75,34 @@ public class ProyectoController {
         proyectoService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/personal")
+    public ResponseEntity<List<ec.edu.epn.proyectodiseno.model.entity.AsignacionProyecto>> obtenerPersonalDeProyecto(@PathVariable Long id) {
+        List<ec.edu.epn.proyectodiseno.model.entity.AsignacionProyecto> asignaciones = proyectoService.obtenerPersonalDeProyecto(id);
+        return ResponseEntity.ok(asignaciones);
+    }
+
+    @PostMapping(value = "/{id}/documento", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> subirDocumento(
+            @PathVariable Long id,
+            @RequestParam("archivo") org.springframework.web.multipart.MultipartFile archivo) throws java.io.IOException {
+        proyectoService.subirDocumento(id, archivo);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/documento")
+    public ResponseEntity<org.springframework.core.io.Resource> descargarDocumento(@PathVariable Long id) {
+        byte[] documento = proyectoService.descargarDocumento(id);
+        if (documento == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Proyecto proyecto = proyectoService.buscarPorId(id);
+        String nombreArchivo = proyecto.getNombreDocumento() != null ? proyecto.getNombreDocumento() : "documento.pdf";
+        org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(documento);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nombreArchivo + "\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .contentLength(documento.length)
+                .body(resource);
+    }
 }

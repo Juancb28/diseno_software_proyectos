@@ -53,6 +53,13 @@ public class Proyecto extends Log {
     @Builder.Default
     private EstadoProyecto estadoProyecto = EstadoProyecto.PLANIFICACION;
 
+    @Lob
+    @Column(name = "documento")
+    private byte[] documento;
+
+    @Column(name = "nombre_documento", length = 255)
+    private String nombreDocumento;
+
     @OneToMany(mappedBy = "proyecto", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<AsignacionProyecto> asignaciones = new HashSet<>();

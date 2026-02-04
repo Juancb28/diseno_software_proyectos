@@ -16,5 +16,7 @@ public interface IUsuarioService {
     
     List<Usuario> listarTodos();
     
+    Usuario autenticar(String username, String password);
+    
     void eliminar(Long id);
 }

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import ec.edu.epn.proyectodiseno.model.dto.ContratoResumenDTO;
 import ec.edu.epn.proyectodiseno.model.entity.Contrato;
 import ec.edu.epn.proyectodiseno.service.IContratoService;
 
@@ -45,9 +46,18 @@ public class ContratoController {
     }
 
     @GetMapping("/personal/{cedula}")
-    public ResponseEntity<List<Contrato>> buscarPorPersonal(@PathVariable String cedula) {
-        List<Contrato> contratos = contratoService.buscarPorPersonal(cedula);
+    public ResponseEntity<List<ContratoResumenDTO>> buscarPorPersonal(@PathVariable String cedula) {
+        List<ContratoResumenDTO> contratos = contratoService.buscarResumenPorPersonal(cedula);
         return ResponseEntity.ok(contratos);
+    }
+
+    @GetMapping("/personal/{cedula}/ultimo-id")
+    public ResponseEntity<Long> obtenerUltimoIdPorPersonal(@PathVariable String cedula) {
+        Long id = contratoService.obtenerUltimoIdPorPersonal(cedula);
+        if (id == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(id);
     }
 
     @PostMapping("/{id}/archivo")
@@ -73,5 +83,11 @@ public class ContratoController {
     @GetMapping
     public ResponseEntity<List<Contrato>> listarTodos() {
         return ResponseEntity.ok(contratoService.listarTodos());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarContrato(@PathVariable Long id) {
+        contratoService.eliminarContrato(id);
+        return ResponseEntity.noContent().build();
     }
 }

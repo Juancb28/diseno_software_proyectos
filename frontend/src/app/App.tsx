@@ -34,7 +34,7 @@ export default function App() {
             <Route
               path="/usuarios"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'JEFATURA']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'JEFATURA']}>
                   <Layout>
                     <Usuarios />
                   </Layout>
@@ -44,7 +44,7 @@ export default function App() {
             <Route
               path="/proyectos"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'JEFATURA', 'DIRECTOR']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']}>
                   <Layout>
                     <Proyectos />
                   </Layout>
@@ -54,7 +54,7 @@ export default function App() {
             <Route
               path="/proyectos/:id"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'JEFATURA', 'DIRECTOR']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']}>
                   <Layout>
                     <ProyectoDetalle />
                   </Layout>
@@ -64,7 +64,7 @@ export default function App() {
             <Route
               path="/personal"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'JEFATURA', 'DIRECTOR']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']}>
                   <Layout>
                     <Personal />
                   </Layout>
@@ -74,7 +74,7 @@ export default function App() {
             <Route
               path="/ausencias"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'JEFATURA', 'DIRECTOR']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO']}>
                   <Layout>
                     <Ausencias />
                   </Layout>
@@ -84,7 +84,7 @@ export default function App() {
             <Route
               path="/asistencia"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'JEFATURA', 'DIRECTOR', 'AYUDANTE']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'JEFATURA', 'DIRECTOR_PROYECTO', 'EMPLEADO']}>
                   <Layout>
                     <Asistencia />
                   </Layout>
@@ -94,7 +94,7 @@ export default function App() {
             <Route
               path="/contratos"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'AYUDANTE']}>
+                <ProtectedRoute allowedRoles={['ADMINISTRADOR', 'EMPLEADO']}>
                   <Layout>
                     <Contratos />
                   </Layout>

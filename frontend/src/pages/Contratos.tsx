@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { contratosService, Contrato } from '@/services/contratos.service';
+import { personalService } from '@/services/personal.service';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -24,66 +26,50 @@ import { Badge } from '@/app/components/ui/badge';
 import { Upload, FileText, Eye, Download, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Contrato {
-  id: number;
-  empleado: string;
-  tipo: 'TIEMPO_COMPLETO' | 'MEDIO_TIEMPO' | 'PASANTIA';
-  fechaInicio: string;
-  fechaFin: string;
-  estado: 'ACTIVO' | 'VENCIDO' | 'PENDIENTE';
-  archivoSubido: boolean;
-  nombreArchivo?: string;
-}
-
-const MOCK_CONTRATOS: Contrato[] = [
-  {
-    id: 1,
-    empleado: 'Ana López',
-    tipo: 'PASANTIA',
-    fechaInicio: '2025-01-15',
-    fechaFin: '2026-12-31',
-    estado: 'ACTIVO',
-    archivoSubido: true,
-    nombreArchivo: 'contrato_ana_lopez.pdf'
-  },
-  {
-    id: 2,
-    empleado: 'Pedro Martínez',
-    tipo: 'MEDIO_TIEMPO',
-    fechaInicio: '2025-01-20',
-    fechaFin: '2026-06-30',
-    estado: 'ACTIVO',
-    archivoSubido: true,
-    nombreArchivo: 'contrato_pedro_martinez.pdf'
-  },
-  {
-    id: 3,
-    empleado: 'Laura Sánchez',
-    tipo: 'TIEMPO_COMPLETO',
-    fechaInicio: '2025-02-01',
-    fechaFin: '2027-01-31',
-    estado: 'PENDIENTE',
-    archivoSubido: false
-  },
-];
-
 export function Contratos() {
   const { usuario } = useAuth();
-  const [contratos, setContratos] = useState<Contrato[]>(MOCK_CONTRATOS);
+  const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [personalList, setPersonalList] = useState<any[]>([]);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const isAyudante = usuario?.rol === 'AYUDANTE';
-  const isAdmin = usuario?.rol === 'ADMIN';
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      setLoading(true);
+      const [contratosData, personalData] = await Promise.all([
+        contratosService.listarTodos(),
+        personalService.listarTodos()
+      ]);
+      setContratos(contratosData);
+      setPersonalList(personalData);
+    } catch (error) {
+      toast.error('Error al cargar contratos');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isAyudante = usuario?.tipoRol === 'EMPLEADO';
+  const isAdmin = usuario?.tipoRol === 'ADMINISTRADOR';
   
   const filteredContratos = contratos.filter(contrato => {
     if (isAyudante) {
-      return contrato.empleado === usuario?.nombre;
+      return contrato.personal.cedula === usuario?.codigo || contrato.personal.codigo === usuario?.codigo;
     }
     return true;
   });
+
+  const getEmpleadoNombre = (personal: any) => {
+    return personal ? `${personal.nombres} ${personal.apellidos}` : 'Sin asignar';
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -100,15 +86,23 @@ export function Contratos() {
     }
   };
 
-  const handleUpload = () => {
-    if (!selectedFile) {
+  const handleUpload = async () => {
+    if (!selectedFile || !selectedContrato) {
       toast.error('Seleccione un archivo PDF');
       return;
     }
     
-    toast.success('Contrato subido exitosamente');
-    setUploadDialogOpen(false);
-    setSelectedFile(null);
+    try {
+      await contratosService.subirDocumento(selectedContrato.id, selectedFile);
+      toast.success('Contrato subido exitosamente');
+      await cargarDatos();
+      setUploadDialogOpen(false);
+      setSelectedFile(null);
+      setSelectedContrato(null);
+    } catch (error) {
+      toast.error('Error al subir el contrato');
+      console.error('Error:', error);
+    }
   };
 
   const viewContrato = (contrato: Contrato) => {
@@ -116,31 +110,20 @@ export function Contratos() {
     setViewDialogOpen(true);
   };
 
-  const getEstadoBadge = (estado: string) => {
-    const colors: Record<string, string> = {
-      ACTIVO: 'bg-green-100 text-green-800',
-      VENCIDO: 'bg-red-100 text-red-800',
-      PENDIENTE: 'bg-yellow-100 text-yellow-800'
-    };
-    return colors[estado] || 'bg-gray-100 text-gray-800';
+  const getEstadoBadge = (fechaFin?: string) => {
+    if (!fechaFin) return 'bg-green-100 text-green-800';
+    const hoy = new Date();
+    const fin = new Date(fechaFin);
+    if (fin < hoy) return 'bg-red-100 text-red-800';
+    return 'bg-green-100 text-green-800';
   };
 
-  const getTipoBadge = (tipo: string) => {
-    const colors: Record<string, string> = {
-      TIEMPO_COMPLETO: 'bg-blue-100 text-blue-800',
-      MEDIO_TIEMPO: 'bg-purple-100 text-purple-800',
-      PASANTIA: 'bg-orange-100 text-orange-800'
-    };
-    return colors[tipo] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getTipoLabel = (tipo: string) => {
-    const labels: Record<string, string> = {
-      TIEMPO_COMPLETO: 'Tiempo Completo',
-      MEDIO_TIEMPO: 'Medio Tiempo',
-      PASANTIA: 'Pasantía'
-    };
-    return labels[tipo] || tipo;
+  const getEstadoLabel = (fechaFin?: string) => {
+    if (!fechaFin) return 'ACTIVO';
+    const hoy = new Date();
+    const fin = new Date(fechaFin);
+    if (fin < hoy) return 'VENCIDO';
+    return 'ACTIVO';
   };
 
   return (
@@ -222,28 +205,32 @@ export function Contratos() {
             <TableHeader>
               <TableRow>
                 <TableHead>Empleado</TableHead>
-                <TableHead>Tipo</TableHead>
                 <TableHead>Fecha Inicio</TableHead>
                 <TableHead>Fecha Fin</TableHead>
+                <TableHead>Salario</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Documento</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredContratos.map((contrato) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">Cargando contratos...</TableCell>
+                </TableRow>
+              ) : filteredContratos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">No hay contratos registrados</TableCell>
+                </TableRow>
+              ) : filteredContratos.map((contrato) => (
                 <TableRow key={contrato.id}>
-                  <TableCell className="font-medium">{contrato.empleado}</TableCell>
-                  <TableCell>
-                    <Badge className={getTipoBadge(contrato.tipo)}>
-                      {getTipoLabel(contrato.tipo)}
-                    </Badge>
-                  </TableCell>
+                  <TableCell className="font-medium">{getEmpleadoNombre(contrato.personal)}</TableCell>
                   <TableCell>{new Date(contrato.fechaInicio).toLocaleDateString('es-ES')}</TableCell>
-                  <TableCell>{new Date(contrato.fechaFin).toLocaleDateString('es-ES')}</TableCell>
+                  <TableCell>{contrato.fechaFin ? new Date(contrato.fechaFin).toLocaleDateString('es-ES') : 'Indefinido'}</TableCell>
+                  <TableCell>${contrato.salario?.toFixed(2) || 'N/A'}</TableCell>
                   <TableCell>
-                    <Badge className={getEstadoBadge(contrato.estado)}>
-                      {contrato.estado}
+                    <Badge className={getEstadoBadge(contrato.fechaFin)}>
+                      {getEstadoLabel(contrato.fechaFin)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -271,17 +258,33 @@ export function Contratos() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => toast.success('Descargando contrato...')}
+                            onClick={async () => {
+                              try {
+                                const blob = await contratosService.descargarDocumento(contrato.id);
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = contrato.nombreDocumento || 'contrato.pdf';
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                toast.success('Contrato descargado');
+                              } catch (error) {
+                                toast.error('Error al descargar el contrato');
+                              }
+                            }}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
                         </>
                       )}
-                      {!contrato.archivoSubido && isAyudante && contrato.empleado === usuario?.nombre && (
+                      {!contrato.archivoSubido && isAyudante && (contrato.personal.cedula === usuario?.codigo || contrato.personal.codigo === usuario?.codigo) && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setUploadDialogOpen(true)}
+                          onClick={() => {
+                            setSelectedContrato(contrato);
+                            setUploadDialogOpen(true);
+                          }}
                           className="text-blue-600"
                         >
                           <Upload className="h-4 w-4" />
@@ -300,7 +303,7 @@ export function Contratos() {
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Contrato - {selectedContrato?.empleado}</DialogTitle>
+            <DialogTitle>Contrato - {selectedContrato && getEmpleadoNombre(selectedContrato.personal)}</DialogTitle>
             <DialogDescription>
               {selectedContrato?.nombreArchivo}
             </DialogDescription>
@@ -312,10 +315,10 @@ export function Contratos() {
               Archivo: {selectedContrato?.nombreArchivo}
             </p>
             <div className="bg-white p-6 rounded-lg shadow-sm max-w-2xl text-left">
-              <h3 className="font-bold text-lg mb-4">CONTRATO DE {getTipoLabel(selectedContrato?.tipo || '').toUpperCase()}</h3>
+              <h3 className="font-bold text-lg mb-4">CONTRATO DE TRABAJO</h3>
               <div className="space-y-3 text-sm text-gray-700">
-                <p><strong>Empleado:</strong> {selectedContrato?.empleado}</p>
-                <p><strong>Tipo:</strong> {getTipoLabel(selectedContrato?.tipo || '')}</p>
+                <p><strong>Empleado:</strong> {selectedContrato && getEmpleadoNombre(selectedContrato.personal)}</p>
+                <p><strong>Salario:</strong> ${selectedContrato?.salario || 'No especificado'}</p>
                 <p><strong>Fecha Inicio:</strong> {selectedContrato && new Date(selectedContrato.fechaInicio).toLocaleDateString('es-ES')}</p>
                 <p><strong>Fecha Fin:</strong> {selectedContrato && new Date(selectedContrato.fechaFin).toLocaleDateString('es-ES')}</p>
                 <p className="pt-4 text-xs text-gray-500">

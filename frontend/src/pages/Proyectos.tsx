@@ -33,20 +33,25 @@ import { Badge } from '@/app/components/ui/badge';
 import { Plus, Pencil, Trash2, Search, Users as UsersIcon, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { proyectosService, Proyecto } from '@/services/proyectos.service';
+import { personalService, Personal } from '@/services/personal.service';
 
 export function Proyectos() {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
+  const [personal, setPersonal] = useState<Personal[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Proyecto | null>(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
+    codigoProyecto: '',
     nombre: '',
     descripcion: '',
     fechaInicio: '',
     fechaFin: '',
+    presupuesto: '',
+    directorCedula: '',
     estadoProyecto: 'PLANIFICACION' as Proyecto['estadoProyecto'],
   });
 
@@ -59,10 +64,14 @@ export function Proyectos() {
   const cargarProyectos = async () => {
     try {
       setLoading(true);
-      const data = await proyectosService.listarTodos();
-      setProyectos(data);
+      const [proyectosData, personalData] = await Promise.all([
+        proyectosService.listarTodos(),
+        personalService.listarTodos()
+      ]);
+      setProyectos(proyectosData);
+      setPersonal(personalData);
     } catch (error) {
-      toast.error('Error al cargar proyectos');
+      toast.error('Error al cargar datos');
       console.error(error);
     } finally {
       setLoading(false);
@@ -91,10 +100,13 @@ export function Proyectos() {
   const handleEdit = (proyecto: Proyecto) => {
     setEditingProject(proyecto);
     setFormData({
+      codigoProyecto: proyecto.codigoProyecto || '',
       nombre: proyecto.nombre,
       descripcion: proyecto.descripcion || '',
       fechaInicio: proyecto.fechaInicio || '',
       fechaFin: proyecto.fechaFin || '',
+      presupuesto: proyecto.presupuesto?.toString() || '',
+      directorCedula: proyecto.director?.cedula || '',
       estadoProyecto: proyecto.estadoProyecto,
     });
     setDialogOpen(true);
@@ -102,20 +114,37 @@ export function Proyectos() {
 
   const handleSave = async () => {
     try {
+      const proyectoData: any = {
+        codigoProyecto: formData.codigoProyecto,
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        fechaInicio: formData.fechaInicio,
+        fechaFin: formData.fechaFin,
+        presupuesto: formData.presupuesto ? parseFloat(formData.presupuesto) : undefined,
+        estadoProyecto: formData.estadoProyecto,
+      };
+
+      if (formData.directorCedula) {
+        proyectoData.director = { cedula: formData.directorCedula };
+      }
+
       if (editingProject) {
-        await proyectosService.modificar(editingProject.id!, formData);
+        await proyectosService.modificar(editingProject.id!, proyectoData);
         toast.success('Proyecto actualizado');
       } else {
-        await proyectosService.crear(formData);
+        await proyectosService.crear(proyectoData);
         toast.success('Proyecto creado');
       }
       setDialogOpen(false);
       setEditingProject(null);
       setFormData({
+        codigoProyecto: '',
         nombre: '',
         descripcion: '',
         fechaInicio: '',
         fechaFin: '',
+        presupuesto: '',
+        directorCedula: '',
         estadoProyecto: 'PLANIFICACION',
       });
       cargarProyectos();
@@ -180,14 +209,25 @@ export function Proyectos() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nombre">Nombre del Proyecto</Label>
-                  <Input 
-                    id="nombre" 
-                    placeholder="Sistema de Gestión..."
-                    value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="codigoProyecto">Código del Proyecto</Label>
+                    <Input 
+                      id="codigoProyecto" 
+                      placeholder="PROJ-001"
+                      value={formData.codigoProyecto}
+                      onChange={(e) => setFormData({ ...formData, codigoProyecto: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nombre">Nombre del Proyecto</Label>
+                    <Input 
+                      id="nombre" 
+                      placeholder="Sistema de Gestión..."
+                      value={formData.nombre}
+                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="descripcion">Descripción</Label>
@@ -210,23 +250,63 @@ export function Proyectos() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="estado">Estado</Label>
+                    <Label htmlFor="fechaFin">Fecha de Fin</Label>
+                    <Input 
+                      id="fechaFin" 
+                      type="date"
+                      value={formData.fechaFin}
+                      onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="presupuesto">Presupuesto ($)</Label>
+                    <Input 
+                      id="presupuesto" 
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.presupuesto}
+                      onChange={(e) => setFormData({ ...formData, presupuesto: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="director">Director del Proyecto</Label>
                     <Select 
-                      value={formData.estadoProyecto}
-                      onValueChange={(value) => setFormData({ ...formData, estadoProyecto: value as Proyecto['estadoProyecto'] })}
+                      value={formData.directorCedula}
+                      onValueChange={(value) => setFormData({ ...formData, directorCedula: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Seleccionar director" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="PLANIFICACION">Planificación</SelectItem>
-                        <SelectItem value="EN_EJECUCION">En Ejecución</SelectItem>
-                        <SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
-                        <SelectItem value="FINALIZADO">Finalizado</SelectItem>
-                        <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                        {personal.map((p) => (
+                          <SelectItem key={p.cedula} value={p.cedula}>
+                            {p.nombres} {p.apellidos}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <Select 
+                    value={formData.estadoProyecto}
+                    onValueChange={(value) => setFormData({ ...formData, estadoProyecto: value as Proyecto['estadoProyecto'] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PLANIFICACION">Planificación</SelectItem>
+                      <SelectItem value="EN_EJECUCION">En Ejecución</SelectItem>
+                      <SelectItem value="SUSPENDIDO">Suspendido</SelectItem>
+                      <SelectItem value="FINALIZADO">Finalizado</SelectItem>
+                      <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button onClick={handleSave} className="w-full">
                   {editingProject ? 'Actualizar' : 'Crear'} Proyecto
@@ -257,20 +337,23 @@ export function Proyectos() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Código</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Descripción</TableHead>
                 <TableHead>Director</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Fecha Inicio</TableHead>
-                <TableHead>Ayudantes</TableHead>
+                <TableHead>Fecha Fin</TableHead>
+                <TableHead>Presupuesto</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProyectos.map((proyecto) => (
                 <TableRow key={proyecto.id}>
+                  <TableCell className="font-medium">{proyecto.codigoProyecto || 'N/A'}</TableCell>
                   <TableCell className="font-medium">{proyecto.nombre}</TableCell>
-                  <TableCell className="max-w-xs truncate">{proyecto.descripcion}</TableCell>
+                  <TableCell className="max-w-xs truncate">{proyecto.descripcion || 'N/A'}</TableCell>
                   <TableCell>
                     {proyecto.director ? `${proyecto.director.nombres} ${proyecto.director.apellidos}` : 'Sin asignar'}
                   </TableCell>
@@ -280,12 +363,8 @@ export function Proyectos() {
                     </Badge>
                   </TableCell>
                   <TableCell>{proyecto.fechaInicio ? new Date(proyecto.fechaInicio).toLocaleDateString('es-ES') : 'N/A'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <UsersIcon className="h-4 w-4 text-gray-400" />
-                      -
-                    </div>
-                  </TableCell>
+                  <TableCell>{proyecto.fechaFin ? new Date(proyecto.fechaFin).toLocaleDateString('es-ES') : 'N/A'}</TableCell>
+                  <TableCell>${proyecto.presupuesto?.toFixed(2) || '0.00'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button

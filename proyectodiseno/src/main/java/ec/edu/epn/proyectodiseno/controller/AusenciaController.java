@@ -58,6 +58,12 @@ public class AusenciaController {
         return ResponseEntity.ok(ausencia);
     }
 
+    @GetMapping
+    public ResponseEntity<List<Ausencia>> listarTodas() {
+        List<Ausencia> ausencias = ausenciaService.listarTodas();
+        return ResponseEntity.ok(ausencias);
+    }
+
     @GetMapping("/personal/{cedula}")
     public ResponseEntity<List<Ausencia>> obtenerAusenciasPorPersonal(@PathVariable String cedula) {
         List<Ausencia> ausencias = ausenciaService.obtenerAusenciasPorPersonal(cedula);

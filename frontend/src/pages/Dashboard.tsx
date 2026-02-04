@@ -23,6 +23,12 @@ interface Stats {
   ausenciasPendientes: number;
 }
 
+interface ActividadReciente {
+  accion: string;
+  tiempo: string;
+  tipo: string;
+}
+
 export function Dashboard() {
   const { usuario } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -32,6 +38,7 @@ export function Dashboard() {
     proyectosActivos: 0,
     ausenciasPendientes: 0
   });
+  const [actividades, setActividades] = useState<ActividadReciente[]>([]);
 
   useEffect(() => {
     cargarEstadisticas();
@@ -56,6 +63,36 @@ export function Dashboard() {
         proyectosActivos,
         ausenciasPendientes
       });
+
+      // Generar actividades recientes basadas en datos reales
+      const actividadesRecientes: ActividadReciente[] = [];
+      
+      // Proyectos recientes (últimos 4)
+      const proyectosRecientes = [...proyectos]
+        .sort((a, b) => (b.id || 0) - (a.id || 0))
+        .slice(0, 2);
+      proyectosRecientes.forEach(p => {
+        actividadesRecientes.push({
+          accion: `Proyecto "${p.nombre}" creado`,
+          tiempo: 'Recientemente',
+          tipo: 'proyecto'
+        });
+      });
+
+      // Ausencias recientes (últimas 2)
+      const ausenciasRecientes = [...ausencias]
+        .sort((a, b) => (b.id || 0) - (a.id || 0))
+        .slice(0, 2);
+      ausenciasRecientes.forEach(a => {
+        const empleado = `${a.personal.nombres} ${a.personal.apellidos}`;
+        actividadesRecientes.push({
+          accion: `Ausencia de ${empleado} - ${a.estado}`,
+          tiempo: 'Recientemente',
+          tipo: 'ausencia'
+        });
+      });
+
+      setActividades(actividadesRecientes.slice(0, 4));
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
     } finally {
@@ -141,17 +178,18 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { action: 'Nuevo proyecto creado', time: 'Hace 2 horas' },
-                { action: 'Ausencia aprobada', time: 'Hace 5 horas' },
-                { action: 'Contrato actualizado', time: 'Hace 1 día' },
-                { action: 'Personal agregado', time: 'Hace 2 días' }
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <span className="text-sm text-gray-700">{activity.action}</span>
-                  <span className="text-xs text-gray-500">{activity.time}</span>
+              {actividades.length > 0 ? (
+                actividades.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <span className="text-sm text-gray-700">{activity.accion}</span>
+                    <span className="text-xs text-gray-500">{activity.tiempo}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <p className="text-sm">No hay actividad reciente</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>

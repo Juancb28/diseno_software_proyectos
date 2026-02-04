@@ -24,4 +24,6 @@ public interface IPersonalService {
     List<Personal> listarTodos();
     
     Integer contabilizarPersonal(EstadoLaboral estado);
+
+    void eliminarPersonal(String cedula);
 }

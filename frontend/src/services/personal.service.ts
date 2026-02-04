@@ -75,4 +75,9 @@ export const personalService = {
     const response = await apiClient.get(`/personal/contar/${estado}`);
     return response.data;
   },
+
+  // Eliminar personal (soft delete)
+  eliminar: async (cedula: string): Promise<void> => {
+    await apiClient.delete(`/personal/${cedula}`);
+  },
 };

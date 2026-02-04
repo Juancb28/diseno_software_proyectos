@@ -76,5 +76,11 @@ public class PersonalController {
         return ResponseEntity.ok(cantidad);
     }
 
+    @DeleteMapping("/{cedula}")
+    public ResponseEntity<Void> eliminarPersonal(@PathVariable String cedula) {
+        personalService.eliminarPersonal(cedula);
+        return ResponseEntity.noContent().build();
+    }
+
     // Eliminar removed as it is not in interface. Use cambiarEstado via PATCH.
 }

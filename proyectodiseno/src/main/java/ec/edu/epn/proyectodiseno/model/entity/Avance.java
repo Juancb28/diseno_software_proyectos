@@ -43,7 +43,7 @@ public class Avance extends Log {
     private LocalDateTime fechaRevision;
     
     @Lob
-    @Column(name = "documento_pdf", columnDefinition = "BLOB")
+    @Column(name = "documento_pdf", columnDefinition = "BYTEA")
     private byte[] documentoPdf;
     
     @Column(name = "nombre_archivo")

@@ -4,10 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import ec.edu.epn.proyectodiseno.model.entity.RegistroAsistencia;
-import ec.edu.epn.proyectodiseno.model.entity.Personal;
-import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
-import ec.edu.epn.proyectodiseno.repository.RegistroAsistenciaRepository;
+import ec.edu.epn.proyectodiseno.model.entity.Asistencia;
+import ec.edu.epn.proyectodiseno.repository.AsistenciaRepository;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,43 +14,42 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AsistenciaService implements IAsistenciaService {
 
-    private final RegistroAsistenciaRepository registroAsistenciaRepository;
-    private final IPersonalService personalService;
+    private final AsistenciaRepository asistenciaRepository;
 
     @Override
     @Transactional
-    public RegistroAsistencia registrarAsistencia(Long personalId, TipoRegistro tipoRegistro) {
-        Personal personal = personalService.buscarPorId(personalId);
-        RegistroAsistencia registro = RegistroAsistencia.builder()
-                .personal(personal)
-                .tipoRegistro(tipoRegistro)
-                .fechaHora(java.time.LocalDateTime.now())
-                .build();
-        return registroAsistenciaRepository.save(registro);
+    public Asistencia registrarAsistencia(Asistencia asistencia) {
+        if (asistencia.getPersonal() == null || asistencia.getPersonal().getCedula() == null) {
+            throw new RuntimeException("Personal es requerido");
+        }
+        // Ensure personal exists or attach? logic might differ. 
+        // Typically strict:
+        // personalService.buscarPorId(asistencia.getPersonal().getCedula());
+        return asistenciaRepository.save(asistencia);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public RegistroAsistencia buscarPorId(Long id) {
-        return registroAsistenciaRepository.findById(id)
+    public Asistencia buscarPorId(Long id) {
+        return asistenciaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Registro de asistencia no encontrado con ID: " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RegistroAsistencia> obtenerAsistenciasPorPersonal(Long personalId) {
-        return registroAsistenciaRepository.findByPersonalId(personalId);
+    public List<Asistencia> obtenerAsistenciasPorPersonal(String cedula) {
+        return asistenciaRepository.findByPersonalCedula(cedula);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RegistroAsistencia> obtenerAsistenciasPorFecha(Long personalId, LocalDate fecha) {
-        return registroAsistenciaRepository.findByPersonalIdAndFecha(personalId, fecha);
+    public List<Asistencia> obtenerAsistenciasPorFecha(String cedula, LocalDate fecha) {
+        return asistenciaRepository.findByPersonalAndRangoFechas(cedula, fecha, fecha);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RegistroAsistencia> listarTodas() {
-        return registroAsistenciaRepository.findAll();
+    public List<Asistencia> listarTodas() {
+        return asistenciaRepository.findAll();
     }
 }

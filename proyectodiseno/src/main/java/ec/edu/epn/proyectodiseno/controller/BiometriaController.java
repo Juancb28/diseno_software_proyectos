@@ -1,6 +1,5 @@
 package ec.edu.epn.proyectodiseno.controller;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -8,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import ec.edu.epn.proyectodiseno.model.entity.DatoBiometrico;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
-import ec.edu.epn.proyectodiseno.model.entity.RegistroAsistencia;
+import ec.edu.epn.proyectodiseno.model.entity.Asistencia;
 import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
 import ec.edu.epn.proyectodiseno.service.IBiometriaService;
 
@@ -23,11 +22,11 @@ public class BiometriaController {
 
     private final IBiometriaService biometriaService;
 
-    @PostMapping("/registrar/{personalId}")
+    @PostMapping("/registrar/{cedula}")
     public ResponseEntity<Void> registrarDatoBiometrico(
-            @PathVariable Long personalId,
+            @PathVariable String cedula,
             @RequestBody byte[] datos) {
-        biometriaService.registrarDatoBiometrico(personalId, datos);
+        biometriaService.registrarDatoBiometrico(cedula, datos);
         return ResponseEntity.ok().build();
     }
 
@@ -49,31 +48,31 @@ public class BiometriaController {
         return ResponseEntity.ok(personal);
     }
 
-    @PostMapping("/asistencia/{personalId}")
-    public ResponseEntity<RegistroAsistencia> registrarAsistencia(
-            @PathVariable Long personalId,
+    @PostMapping("/asistencia/{cedula}")
+    public ResponseEntity<Asistencia> registrarAsistencia(
+            @PathVariable String cedula,
             @RequestParam TipoRegistro tipoRegistro) {
-        RegistroAsistencia registro = biometriaService.registrarAsistencia(personalId, tipoRegistro);
+        Asistencia registro = biometriaService.registrarAsistencia(cedula, tipoRegistro);
         return ResponseEntity.ok(registro);
     }
 
-    @GetMapping("/datos/{personalId}")
-    public ResponseEntity<List<DatoBiometrico>> obtenerDatosBiometricos(@PathVariable Long personalId) {
-        List<DatoBiometrico> datos = biometriaService.obtenerDatosBiometricosPorPersonal(personalId);
+    @GetMapping("/datos/{cedula}")
+    public ResponseEntity<List<DatoBiometrico>> obtenerDatosBiometricos(@PathVariable String cedula) {
+        List<DatoBiometrico> datos = biometriaService.obtenerDatosBiometricosPorPersonal(cedula);
         return ResponseEntity.ok(datos);
     }
 
-    @GetMapping("/asistencia/{personalId}")
-    public ResponseEntity<List<RegistroAsistencia>> obtenerRegistrosAsistencia(@PathVariable Long personalId) {
-        List<RegistroAsistencia> registros = biometriaService.obtenerRegistrosAsistenciaPorPersonal(personalId);
+    @GetMapping("/asistencia/{cedula}")
+    public ResponseEntity<List<Asistencia>> obtenerRegistrosAsistencia(@PathVariable String cedula) {
+        List<Asistencia> registros = biometriaService.obtenerRegistrosAsistenciaPorPersonal(cedula);
         return ResponseEntity.ok(registros);
     }
 
-    @GetMapping("/asistencia/{personalId}/fecha")
-    public ResponseEntity<List<RegistroAsistencia>> obtenerRegistrosAsistenciaPorFecha(
-            @PathVariable Long personalId,
+    @GetMapping("/asistencia/{cedula}/fecha")
+    public ResponseEntity<List<Asistencia>> obtenerRegistrosAsistenciaPorFecha(
+            @PathVariable String cedula,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        List<RegistroAsistencia> registros = biometriaService.obtenerRegistrosAsistenciaPorFecha(personalId, fecha);
+        List<Asistencia> registros = biometriaService.obtenerRegistrosAsistenciaPorFecha(cedula, fecha);
         return ResponseEntity.ok(registros);
     }
 }

@@ -1,5 +1,6 @@
 package ec.edu.epn.proyectodiseno.service;
 
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -7,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ec.edu.epn.proyectodiseno.model.entity.Ausencia;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
 import ec.edu.epn.proyectodiseno.model.entity.Usuario;
-import ec.edu.epn.proyectodiseno.repository.UsuarioRepository;
+import ec.edu.epn.proyectodiseno.model.enums.EstadoAusencia;
 import ec.edu.epn.proyectodiseno.repository.AusenciaRepository;
 
 import java.util.List;
@@ -18,46 +19,53 @@ public class AusenciaService implements IAusenciaService {
 
     private final AusenciaRepository ausenciaRepository;
     private final IPersonalService personalService;
-    private final UsuarioRepository usuarioRepository;
+    private final IUsuarioService usuarioService;
 
     @Override
     @Transactional
-    public Ausencia notificarAusencia(Long personalId, Ausencia ausencia) {
-        Personal personal = personalService.buscarPorId(personalId);
+    public Ausencia registrarAusencia(String cedula, Ausencia ausencia) {
+        Personal personal = personalService.buscarPorId(cedula);
         ausencia.setPersonal(personal);
-        
-        // Establecer estado por defecto si no viene
-        if (ausencia.getEstadoAusencia() == null) {
-            ausencia.setEstadoAusencia(ec.edu.epn.proyectodiseno.model.enums.EstadoAusencia.PENDIENTE);
-        }
-        
-        if (validarSolapamiento(ausencia)) {
-            throw new RuntimeException("La ausencia se solapa con otra ausencia existente");
-        }
-        
+        validarAusencia(ausencia);
+        return ausenciaRepository.save(ausencia);
+    }
+
+
+    @Override
+    @Transactional
+    public Ausencia aprobarAusencia(Long ausenciaId, Long usuarioId) {
+        Ausencia ausencia = buscarPorId(ausenciaId);
+        Usuario usuario = usuarioService.buscarPorId(usuarioId);
+        ausencia.aprobar(usuario);
         return ausenciaRepository.save(ausencia);
     }
 
     @Override
     @Transactional
-    public void aprobarAusencia(Long ausenciaId, Long aprobadorId) {
+    public Ausencia rechazarAusencia(Long ausenciaId, Long usuarioId, String motivo) {
         Ausencia ausencia = buscarPorId(ausenciaId);
-        Usuario aprobador = usuarioRepository.findById(aprobadorId)
-                .orElseThrow(() -> new RuntimeException("Usuario aprobador no encontrado"));
-        
-        ausencia.aprobar(aprobador);
-        ausenciaRepository.save(ausencia);
+        Usuario usuario = usuarioService.buscarPorId(usuarioId);
+        ausencia.rechazar(usuario, motivo);
+        return ausenciaRepository.save(ausencia);
     }
 
     @Override
-    @Transactional
-    public void rechazarAusencia(Long ausenciaId, Long aprobadorId, String motivo) {
-        Ausencia ausencia = buscarPorId(ausenciaId);
-        Usuario aprobador = usuarioRepository.findById(aprobadorId)
-                .orElseThrow(() -> new RuntimeException("Usuario aprobador no encontrado"));
-        
-        ausencia.rechazar(aprobador, motivo);
-        ausenciaRepository.save(ausencia);
+    @Transactional(readOnly = true)
+    public List<Ausencia> obtenerAusenciasPorPersonal(String cedula) {
+        return ausenciaRepository.findByPersonalCedula(cedula);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Ausencia> obtenerAusenciasPorEstado(EstadoAusencia estado) {
+        return ausenciaRepository.findByEstadoAusencia(estado);
+    }
+    
+    private void validarAusencia(Ausencia ausencia) {
+        if (ausencia.getFechaInicio().isAfter(ausencia.getFechaFin())) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
+        }
     }
 
     @Override
@@ -66,39 +74,16 @@ public class AusenciaService implements IAusenciaService {
         return ausenciaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ausencia no encontrada con ID: " + id));
     }
-
+    
     @Override
-    @Transactional(readOnly = true)
-    public List<Ausencia> obtenerAusenciasPorPersonal(Long personalId) {
-        return ausenciaRepository.findByPersonalId(personalId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Ausencia> obtenerAusenciasPendientes() {
-        return ausenciaRepository.findPendientes();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Ausencia> listarTodas() {
-        return ausenciaRepository.findAll();
-    }
-
-    private boolean validarSolapamiento(Ausencia ausencia) {
-        List<Ausencia> ausenciasPersonal = ausenciaRepository.findByPersonalId(ausencia.getPersonal().getId());
-        
-        for (Ausencia a : ausenciasPersonal) {
-            if (a.getEstadoAusencia() != ec.edu.epn.proyectodiseno.model.enums.EstadoAusencia.RECHAZADA &&
-                a.getEstadoAusencia() != ec.edu.epn.proyectodiseno.model.enums.EstadoAusencia.CANCELADA) {
-                
-                if (!(ausencia.getFechaFin().isBefore(a.getFechaInicio()) || 
-                      ausencia.getFechaInicio().isAfter(a.getFechaFin()))) {
-                    return true;
-                }
-            }
+    @Transactional
+    public void cancelarAusencia(Long id) {
+        Ausencia ausencia = buscarPorId(id);
+        if (ausencia.getEstadoAusencia() == EstadoAusencia.PENDIENTE) {
+             ausencia.setEstadoAusencia(EstadoAusencia.CANCELADA);
+             ausenciaRepository.save(ausencia);
+        } else {
+            throw new RuntimeException("No se puede cancelar una ausencia que no está pendiente");
         }
-        
-        return false;
     }
 }

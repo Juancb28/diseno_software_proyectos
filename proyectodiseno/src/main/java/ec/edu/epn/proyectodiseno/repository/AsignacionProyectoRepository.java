@@ -14,13 +14,12 @@ public interface AsignacionProyectoRepository extends JpaRepository<AsignacionPr
     
     List<AsignacionProyecto> findByProyectoId(Long proyectoId);
     
-    List<AsignacionProyecto> findByPersonalId(Long personalId);
+    @Query("SELECT a FROM AsignacionProyecto a WHERE a.personal.cedula = :cedula")
+    List<AsignacionProyecto> findByPersonalCedula(String cedula);
     
-    @Query("SELECT a FROM AsignacionProyecto a WHERE a.proyecto.id = :proyectoId " +
-           "AND a.fechaFinalizacion IS NULL AND a.estaActivo = true")
-    List<AsignacionProyecto> findAsignacionesActivasPorProyecto(Long proyectoId);
+    // Updated: fechaFinalizacion removed from Entity. Use active flag or logic if field exists?
+    // User requested "AsignacionProyecto: proyecto_id, personal_id, rol_en_proyecto, fecha_asignacion, horas_dedicadas"
+    // So fechaFinalizacion is GONE.
+    // I need to remove methods relying on it.
     
-    @Query("SELECT a FROM AsignacionProyecto a WHERE a.personal.id = :personalId " +
-           "AND a.fechaFinalizacion IS NULL AND a.estaActivo = true")
-    List<AsignacionProyecto> findAsignacionesActivasPorPersonal(Long personalId);
 }

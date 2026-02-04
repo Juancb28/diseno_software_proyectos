@@ -1,29 +1,22 @@
 package ec.edu.epn.proyectodiseno.service;
 
-
-
 import java.util.List;
 
 import ec.edu.epn.proyectodiseno.model.entity.Usuario;
-import ec.edu.epn.proyectodiseno.model.enums.TipoRol;
 
 public interface IUsuarioService {
     
-    Usuario registrarUsuario(Usuario usuario);
+    Usuario crearUsuario(Usuario usuario, String cedula);
     
     Usuario modificarUsuario(Long id, Usuario usuario);
     
     Usuario buscarPorId(Long id);
     
-    Usuario buscarPorCorreo(String correo);
-    
-    Usuario buscarPorCodigo(String codigo);
-    
-    List<Usuario> buscarPorRol(TipoRol tipoRol);
+    Usuario buscarPorUsername(String username);
     
     List<Usuario> listarTodos();
     
-    void eliminar(Long id);
+    Usuario autenticar(String username, String password);
     
-    boolean autenticar(String correo, String contrasena);
+    void eliminar(Long id);
 }

@@ -5,12 +5,12 @@ import java.util.List;
 
 import ec.edu.epn.proyectodiseno.model.entity.DatoBiometrico;
 import ec.edu.epn.proyectodiseno.model.entity.Personal;
-import ec.edu.epn.proyectodiseno.model.entity.RegistroAsistencia;
+import ec.edu.epn.proyectodiseno.model.entity.Asistencia;
 import ec.edu.epn.proyectodiseno.model.enums.TipoRegistro;
 
 public interface IBiometriaService {
     
-    void registrarDatoBiometrico(Long personalId, byte[] datos);
+    void registrarDatoBiometrico(String cedula, byte[] datos);
     
     void activarBiometria(Long datoBiometricoId);
     
@@ -18,11 +18,11 @@ public interface IBiometriaService {
     
     Personal verificarHuella(byte[] datos);
     
-    RegistroAsistencia registrarAsistencia(Long personalId, TipoRegistro tipoRegistro);
+    Asistencia registrarAsistencia(String cedula, TipoRegistro tipoRegistro);
     
-    List<DatoBiometrico> obtenerDatosBiometricosPorPersonal(Long personalId);
+    List<DatoBiometrico> obtenerDatosBiometricosPorPersonal(String cedula);
     
-    List<RegistroAsistencia> obtenerRegistrosAsistenciaPorPersonal(Long personalId);
+    List<Asistencia> obtenerRegistrosAsistenciaPorPersonal(String cedula);
     
-    List<RegistroAsistencia> obtenerRegistrosAsistenciaPorFecha(Long personalId, LocalDate fecha);
+    List<Asistencia> obtenerRegistrosAsistenciaPorFecha(String cedula, LocalDate fecha);
 }

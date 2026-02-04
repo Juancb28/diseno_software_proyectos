@@ -1,24 +1,11 @@
 
+  # User Access Interface Design
 
-1.Crear el proyecto base con React + Vite
+  This is a code bundle for User Access Interface Design. The original project is available at https://www.figma.com/design/BdFrcgjKrxpjiyRYWp73zX/User-Access-Interface-Design.
 
--npm create vite@latest frontend --template react
+  ## Running the code
 
-![alt text](<Captura de pantalla 2026-01-16 223805.png>)
+  Run `npm i` to install the dependencies.
 
--cd frontend
--npm install # solo la primera vez, para instalar dependencias
-
--npm install react-router-dom axios
--npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
-
-![alt text](<Captura de pantalla 2026-01-16 224421.png>)
-
-
-necesitamos cargar el servidor de Vite utilizamos el comando:
-
-npm run dev
-
-Para el testeo:
-- Si USE_MOCK = true → se usan los datos quemados.
-- Si USE_MOCK = false → se llaman las APIs reales con Axios.
+  Run `npm run dev` to start the development server.
+  

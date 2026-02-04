@@ -1,11 +1,11 @@
 package ec.edu.epn.proyectodiseno.model.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import ec.edu.epn.proyectodiseno.model.base.Log;
@@ -23,7 +23,6 @@ public class Ausencia extends Log {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "personal_id", nullable = false)
-    @JsonIgnoreProperties({"ausencias", "contratos", "asignaciones", "datosBiometricos", "registrosAsistencia"})
     private Personal personal;
 
     @Column(name = "fecha_inicio", nullable = false)
@@ -44,34 +43,33 @@ public class Ausencia extends Log {
     @Column(columnDefinition = "TEXT")
     private String motivo;
 
-    @Column(name = "documento_soporte")
-    private String documentoSoporte;
+    @Column(name = "documento_justificativo")
+    private String documentoJustificativo;
+    
+    @Column(columnDefinition = "TEXT")
+    private String observacion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "aprobador_id")
-    @JsonIgnoreProperties({"proyectosDirigidos", "ausenciasAprobadas"})
     private Usuario aprobador;
-
+    
     @Column(name = "fecha_aprobacion")
-    private LocalDate fechaAprobacion;
+    private LocalDateTime fechaAprobacion;
 
-    @Column(name = "motivo_rechazo", columnDefinition = "TEXT")
-    private String motivoRechazo;
-
-    public void aprobar(Usuario usuario) {
+    public long getDiasDuracion() {
+        return ChronoUnit.DAYS.between(fechaInicio, fechaFin) + 1;
+    }
+    
+    public void aprobar(Usuario aprobador) {
         this.estadoAusencia = EstadoAusencia.APROBADA;
-        this.aprobador = usuario;
-        this.fechaAprobacion = LocalDate.now();
+        this.aprobador = aprobador;
+        this.fechaAprobacion = LocalDateTime.now();
     }
-
-    public void rechazar(Usuario usuario, String motivo) {
+    
+    public void rechazar(Usuario rechazarPor, String razon) {
         this.estadoAusencia = EstadoAusencia.RECHAZADA;
-        this.aprobador = usuario;
-        this.fechaAprobacion = LocalDate.now();
-        this.motivoRechazo = motivo;
-    }
-
-    public Integer obtenerDiasTotales() {
-        return (int) ChronoUnit.DAYS.between(fechaInicio, fechaFin) + 1;
+        this.aprobador = rechazarPor;
+        this.observacion = razon;
+        this.fechaAprobacion = LocalDateTime.now();
     }
 }

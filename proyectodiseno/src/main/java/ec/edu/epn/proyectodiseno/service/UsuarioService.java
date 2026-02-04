@@ -1,36 +1,33 @@
 package ec.edu.epn.proyectodiseno.service;
 
-
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ec.edu.epn.proyectodiseno.model.entity.Personal;
 import ec.edu.epn.proyectodiseno.model.entity.Usuario;
-import ec.edu.epn.proyectodiseno.model.enums.TipoRol;
 import ec.edu.epn.proyectodiseno.repository.UsuarioRepository;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UsuarioService implements IUsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final IPersonalService personalService;
 
     @Override
     @Transactional
-    public Usuario registrarUsuario(Usuario usuario) {
-        if (usuario.getCodigo() == null || usuario.getCodigo().isEmpty()) {
-            usuario.setCodigo(generarCodigo());
+    public Usuario crearUsuario(Usuario usuario, String cedula) {
+        if (usuarioRepository.existsByUsername(usuario.getUsername())) {
+            throw new RuntimeException("El nombre de usuario ya existe");
         }
         
-        validarUsuario(usuario);
-        
-        // Encriptar contraseña
-        usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+        if (cedula != null) {
+            Personal personal = personalService.buscarPorId(cedula);
+            usuario.setPersonal(personal);
+        }
         
         return usuarioRepository.save(usuario);
     }
@@ -39,14 +36,10 @@ public class UsuarioService implements IUsuarioService {
     @Transactional
     public Usuario modificarUsuario(Long id, Usuario usuario) {
         Usuario usuarioExistente = buscarPorId(id);
-        usuarioExistente.setNombre(usuario.getNombre());
-        usuarioExistente.setCorreo(usuario.getCorreo());
-        usuarioExistente.setTipoRol(usuario.getTipoRol());
-        
-        if (usuario.getContrasena() != null && !usuario.getContrasena().isEmpty()) {
-            usuarioExistente.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+        usuarioExistente.setUsername(usuario.getUsername());
+        if (usuario.getPassword() != null && !usuario.getPassword().isEmpty()) {
+            usuarioExistente.setPassword(usuario.getPassword());
         }
-        
         return usuarioRepository.save(usuarioExistente);
     }
 
@@ -54,27 +47,14 @@ public class UsuarioService implements IUsuarioService {
     @Transactional(readOnly = true)
     public Usuario buscarPorId(Long id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Usuario buscarPorCorreo(String correo) {
-        return usuarioRepository.findByCorreo(correo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con correo: " + correo));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Usuario buscarPorCodigo(String codigo) {
-        return usuarioRepository.findByCodigo(codigo)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con código: " + codigo));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Usuario> buscarPorRol(TipoRol tipoRol) {
-        return usuarioRepository.findByTipoRol(tipoRol);
+    public Usuario buscarPorUsername(String username) {
+        return usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
     }
 
     @Override
@@ -84,30 +64,27 @@ public class UsuarioService implements IUsuarioService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Usuario autenticar(String username, String password) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        if (!usuario.getPassword().equals(password)) {
+            throw new RuntimeException("Contraseña incorrecta");
+        }
+        
+        if (usuario.getEstado() == null || !usuario.getEstado()) {
+            throw new RuntimeException("Usuario inactivo");
+        }
+        
+        return usuario;
+    }
+
+    @Override
     @Transactional
     public void eliminar(Long id) {
         Usuario usuario = buscarPorId(id);
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean autenticar(String correo, String contrasena) {
-        Usuario usuario = buscarPorCorreo(correo);
-        return passwordEncoder.matches(contrasena, usuario.getContrasena());
-    }
-
-    private String generarCodigo() {
-        return "USR-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    private void validarUsuario(Usuario usuario) {
-        if (usuarioRepository.existsByCorreo(usuario.getCorreo())) {
-            throw new RuntimeException("Ya existe un usuario con el correo: " + usuario.getCorreo());
-        }
-        if (usuarioRepository.existsByCodigo(usuario.getCodigo())) {
-            throw new RuntimeException("Ya existe un usuario con el código: " + usuario.getCodigo());
-        }
     }
 }
